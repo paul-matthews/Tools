@@ -413,3 +413,7 @@ let g:syntastic_auto_jump=0 " Dont jump to the first line with a problem
 let g:syntastic_phpcs_conf=' --extensions=php,module,inc,install,test,profile,theme'
 
 set path=.,,
+
+" Auto sync command
+au BufWritePost * :silent !.bin/file-sync %:p %
+
