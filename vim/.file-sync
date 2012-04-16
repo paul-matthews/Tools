@@ -1,0 +1,20 @@
+<?php
+// vim: syntax=php
+
+// Inclue Pear Log
+require_once 'Log.php';
+
+$home = __DIR__;
+
+return array(
+    'wait' => false,
+    'log' => Log::factory(
+        'file',
+        $home . '/.file-sync.log',
+        'default',
+        array()
+    ),
+    'dirs' => array(
+        array("$home/src", "$home/dest"),
+    ),
+);

@@ -1,0 +1,287 @@
+#!/opt/local/bin/php
+<?php
+/**
+ * Requirements:
+ *  Requirements:
+ *  - PCNTL php extension (http://uk.php.net/manual/en/book.pcntl.php)
+ *  - PEAR Log (http://pear.php.net/package/Log)
+ *
+ */
+
+// Inclue Pear Log
+require_once 'Log.php';
+
+$app = new App(new Config(__DIR__ . '/.file-sync'));
+
+$app->run(new Request($argv, $argc));
+
+class App
+{
+    private $log;
+
+    public function __construct(Config $config)
+    {
+        $this->config = $config;
+    }
+
+    public function run(Request $req)
+    {
+        $app = $this;
+        $config = $this->config;
+        $file = $req->getFilename();
+
+        foreach ($this->getSyncable($file) as $dir) {
+            $cmd = $dir->getCmd($file);
+
+            $dist = new Distributable(function () use ($app, $cmd, $config) {
+                $app->log("Executing: $cmd");
+
+                try {
+                    $cmd($config);
+                } catch (RuntimeException $e) {
+                    $app->log("Failed sync to : {$cmd->getDest()}", PEAR_LOG_ERR);
+                }
+            });
+
+            $dist();
+        }
+
+        if ($this->config->get('wait')) {
+            Distributable::waitAllPids();
+        }
+    }
+
+    public function log($message, $type = PEAR_LOG_INFO)
+    {
+        if (empty($this->log)) {
+            $this->log = $this->config->get('log', Log::factory('null'));
+        }
+
+        $this->log->log($message, $type);
+    }
+
+    public function getSyncable($path)
+    {
+        $syncable = array();
+
+        foreach (SyncDir::factory($this->config) as $dir) {
+            if ($dir->matches($path)) {
+                $syncable[] = $dir;
+            }
+        }
+
+        return $syncable;
+    }
+}
+
+class Request
+{
+    private $file;
+
+    public function __construct($args, $argsCount)
+    {
+        if ($argsCount < 2) {
+            throw new InvalidArgumentException('Not enough params');
+        }
+
+        $this->file = realpath($args[1]);
+
+        if ($this->file === false) {
+            throw new InvalidArgumentException('File not found');
+        }
+    }
+
+    public function getFilename()
+    {
+        return $this->file;
+    }
+}
+
+class Config
+{
+    private $filename;
+    private $config;
+
+    public function __construct($filename)
+    {
+        $this->filename = $filename;
+        $this->config = require $this->filename;
+    }
+
+    public function get($var, $defaultValue = null)
+    {
+        return isset($this->config[$var]) ? $this->config[$var] : $defaultValue;
+    }
+
+    public function getLog()
+    {
+        if (($log = $this->get('log')) !== null) {
+            if ($log instanceof Log) {
+                return $log;
+            }
+        }
+
+        return Log::factory('null');
+    }
+
+    public function __toString()
+    {
+        return $this->filename;
+    }
+}
+
+class SyncDir
+{
+    private static $cache = array();
+
+    public function __construct($srcDir, $destDir = null)
+    {
+        if (is_array($srcDir)) {
+            $destDir = $srcDir[1];
+            $srcDir = $srcDir[0];
+        }
+
+        $this->src = realpath($srcDir);
+        $this->dest = $destDir;
+    }
+
+    public function matches($path)
+    {
+        $srcLen = strlen($this->src);
+
+        if ($this->src && substr($path, 0, $srcLen) == $this->src) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function getCmd($path)
+    {
+        return new SyncDirCmd($path, str_replace($this->src, $this->dest, $path));
+    }
+
+    public static function factory(Config $config)
+    {
+        $key = (string) $config;
+
+        if (empty(self::$cache[$key])) {
+            self::$cache[$key] = array();
+
+            foreach ($config->get('dirs', array()) as $dir) {
+               self::$cache[$key][] = new SyncDir($dir);
+            }
+        }
+
+        return self::$cache[$key];
+    }
+}
+
+class SyncDirCmd
+{
+    const CMD_FORMAT = 'cp -r %s %s 2>&1';
+
+    private $src;
+    private $dest;
+
+    public function __construct($src, $dest)
+    {
+        $this->src = $src;
+        $this->dest = $dest;
+    }
+
+    public function getSrc()
+    {
+        return $this->src;
+    }
+
+    public function getDest()
+    {
+        return $this->dest;
+    }
+
+    public function __invoke(Config $conf)
+    {
+        exec($this->getCmd($conf), $output, $response);
+
+        if ($response !== 0) {
+            throw new RuntimeException("Command failed execution");
+        }
+
+        return $output;
+    }
+
+    private function getCmd(Config $conf)
+    {
+        $append = '';
+        if ($conf->get('output-redirect', false)) {
+            $append = ' 2>&1';
+        }
+
+        return sprintf(self::CMD_FORMAT . $append, $this->src, $this->dest);
+    }
+
+    public function __toString()
+    {
+        return "[{$this->src}] => [{$this->dest}]";
+    }
+}
+
+class Distributable
+{
+    private static $processes;
+
+    private $command;
+    public function __construct($callable)
+    {
+        if (!is_callable($callable)) {
+            throw new InvalidArgumentException('Callable expected');
+        }
+
+        $this->callable = $callable;
+    }
+
+    public function __invoke()
+    {
+        $pid = pcntl_fork();
+
+        if ($pid < 0) {
+            die('Something strange happened');
+        }
+        else if (!$pid) {
+            $this->process();
+        }
+        else {
+            self::addProcess($pid);
+        }
+    }
+
+    private function process()
+    {
+        $callable = $this->callable;
+        $callable();
+        exit(0);
+    }
+
+
+    protected static function addProcess($pid)
+    {
+        self::$processes[] = $pid;
+    }
+
+    public static function waitPid($pid)
+    {
+        pcntl_waitpid($pid, $status);
+
+        return (pcntl_wexitstatus($status) == 0);
+    }
+
+    public static function waitAllPids()
+    {
+        foreach (self::$processes as $id => $pid) {
+            if (self::waitPid($pid)) {
+                unset(self::$processes[$id]);
+            }
+        }
+    }
+}
