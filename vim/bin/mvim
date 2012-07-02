@@ -46,6 +46,9 @@ case "$name" in r*) opts="$opts -Z";; esac
 
 # vimdiff, view, and ex mode
 case "$name" in
+	*vim)
+		opts="$opts -p"
+		;;
 	*vimdiff)
 		opts="$opts -dO"
 		;;
