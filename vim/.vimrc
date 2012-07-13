@@ -425,3 +425,7 @@ colorscheme solarized
 
 " Complete options (disable preview scratch window)
 set completeopt=menu,menuone,longest
+
+" Skeleton implementations
+" Reads the skeleton txt file
+autocmd BufNewFile *.php 0r ~/.vim/skeleton/skeleton.php | normal Gdd
