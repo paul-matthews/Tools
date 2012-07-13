@@ -418,3 +418,7 @@ set path=.,,
 " [DISABLED] Auto sync command
 " au BufWritePost * :silent !.bin/file-sync %:p %
 
+" Solarized
+syntax enable
+set background=dark
+colorscheme solarized
