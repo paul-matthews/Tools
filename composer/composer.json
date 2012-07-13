@@ -1,0 +1,17 @@
+{
+    "repositories": [
+        {
+            "type": "pear",
+            "url": "http://pear.phpunit.de"
+        },
+        {
+            "type": "pear",
+            "url": "http://pear.symfony-project.com"
+        }
+
+    ],
+    "require": {
+        "phing/phing": ">= 2.4.12",
+        "pear-phpunit/PHPUnit": ">= 3.6.11"
+    }
+}
