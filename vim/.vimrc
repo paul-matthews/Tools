@@ -422,3 +422,6 @@ set path=.,,
 syntax enable
 set background=dark
 colorscheme solarized
+
+" Complete options (disable preview scratch window)
+set completeopt=menu,menuone,longest
