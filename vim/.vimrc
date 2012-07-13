@@ -349,8 +349,9 @@ au BufWinEnter *.php let w:m4=matchadd('ErrorMsg', '\(if\|foreach\|switch\|elsei
 au BufWinEnter *.php let w:m5=matchadd('ErrorMsg', '}\(elseif\|else\|catch\)', -1)
 au BufRead,BufNewFile inc.php set syntax=php
 
-call pathogen#helptags()
-call pathogen#runtime_append_all_bundles()
+" [DISABLED] Pathogen builds
+" call pathogen#helptags()
+" call pathogen#runtime_append_all_bundles()
 
 " change the mapleader from \ to ,
 let mapleader=","
@@ -414,6 +415,6 @@ let g:syntastic_phpcs_conf=' --extensions=php,module,inc,install,test,profile,th
 
 set path=.,,
 
-" Auto sync command
-au BufWritePost * :silent !.bin/file-sync %:p %
+" [DISABLED] Auto sync command
+" au BufWritePost * :silent !.bin/file-sync %:p %
 
