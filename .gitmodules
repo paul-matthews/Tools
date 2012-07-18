@@ -1,3 +1,6 @@
 [submodule "vendor/solarized"]
 	path = vendor/solarized
 	url = https://github.com/altercation/solarized.git
+[submodule "vendor/oh-my-zsh"]
+	path = vendor/oh-my-zsh
+	url = https://github.com/robbyrussell/oh-my-zsh.git
