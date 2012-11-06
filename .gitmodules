@@ -4,3 +4,6 @@
 [submodule "vendor/oh-my-zsh"]
 	path = vendor/oh-my-zsh
 	url = https://github.com/robbyrussell/oh-my-zsh.git
+[submodule "vendor/checksyntax_vim"]
+	path = vendor/checksyntax_vim
+	url = https://github.com/tomtom/checksyntax_vim
