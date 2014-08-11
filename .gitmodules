@@ -7,3 +7,6 @@
 [submodule "vendor/checksyntax_vim"]
 	path = vendor/checksyntax_vim
 	url = https://github.com/tomtom/checksyntax_vim
+[submodule "vendor/vim-pathogen"]
+	path = vendor/vim-pathogen
+	url = https://github.com/tpope/vim-pathogen.git
