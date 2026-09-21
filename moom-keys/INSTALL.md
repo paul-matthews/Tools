@@ -92,6 +92,19 @@ The overlay in check 1 takes the **chord key** — the left-hand letter — whil
 the keyboard checks press whichever physical key you like, since both keys of
 a pair send the same chord. `CHEATSHEET.md` lists all three columns.
 
+## Saved layouts
+
+Moom's own saved layouts (arrange windows, then save) are carried across every
+regeneration — `moom-gen.py` keeps them and replaces only its own actions. But
+it can only keep what is in the file you hand it, so **export fresh before
+regenerating**; generating from the original backup would drop any layout
+recorded since.
+
+They are worth having alongside the generated regions: a layout can place
+several windows of the same app, which a scripted sequence of region moves
+cannot. What they cannot do is survive a change of display — a snapshot stores
+absolute pixel frames and the screen set it was recorded on.
+
 ## Rolling back
 
 Each half independently:

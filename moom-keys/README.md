@@ -105,15 +105,20 @@ line up.
 
 ```sh
 osascript -e 'quit app "Moom"'
-./moom-gen.py ~/Desktop/Moom-backup.plist -o ~/Desktop/Moom-new.plist -c CHEATSHEET.md
+defaults export com.manytricks.Moom ~/Desktop/Moom-current.plist
+./moom-gen.py ~/Desktop/Moom-current.plist -o ~/Desktop/Moom-new.plist -c CHEATSHEET.md
 defaults import com.manytricks.Moom ~/Desktop/Moom-new.plist
 open -a Moom
 ./launcher-patch.py ~/Downloads/Keymap-K3_Max_RGB.json --layer 3 -o ~/Downloads/Keymap-windows.json
 ```
 
+**Export fresh every time rather than regenerating from the first backup.**
 Generated actions carry deterministic identifiers derived from their region
-id, so regenerating updates them in place instead of piling up duplicates.
-Always generate from the pristine backup rather than from a generated plist.
+id, so generating from an already-generated plist replaces them in place
+rather than duplicating them — while anything you have added since is kept.
+Saved layouts are the case that matters: record one in Moom, generate from a
+stale backup, and it is gone. The original backup is for rollback, not for
+regenerating from.
 
 Useful flags: `--keep-existing` keeps hand-drawn actions instead of replacing
 them, `--no-chord-keys` and `--no-controller-keys` drop either half of each
