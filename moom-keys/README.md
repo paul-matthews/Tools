@@ -22,12 +22,12 @@ configured. From my export (September 2026):
 | `5` | Right two-thirds | 4–12 | full |
 | `6` | Right third (duplicate of `3`) | 8–12 | full |
 | `7` | Left third (duplicate of `2`) | 0–4 | full |
-| `X` | VC window — centre half, top 60% | 3–9 | 0–6 |
-| `Z` | Lower centre — centre half, bottom half | 3–9 | 5–10 |
-| `A` | Left third, lower two-thirds | 0–4 | 3.33–10 |
-| `B` | Right third, lower two-thirds | 8–12 | 3.33–10 |
-| `C` | Left third, upper two-thirds | 0–4 | 0–6.67 |
-| `D` | Right third, upper two-thirds | 8–12 | 0–6.67 |
+| `X` | Lower centre — centre half, bottom 60% | 3–9 | 4–10 |
+| `Z` | VC window — centre half, top half | 3–9 | 0–5 |
+| `A` | Left third, upper two-thirds | 0–4 | 0–6.67 |
+| `B` | Right third, upper two-thirds | 8–12 | 0–6.67 |
+| `C` | Left third, lower two-thirds | 0–4 | 3.33–10 |
+| `D` | Right third, lower two-thirds | 8–12 | 3.33–10 |
 
 Settings that matter: configuration grid **12 × 10**, grid spacing on with a
 1px gap, snapping on, dismiss-after-move on, and the keyboard controller on
@@ -44,9 +44,8 @@ Four things fall out of that:
 * **Nothing is named.** Moom's AppleScript entry point addresses actions by
   title (`tell application "Moom" to run "VC Top"`), so untitled actions cannot
   be scripted at all.
-* **`X` and `Z` overlap by 10% of the height** (rows 5–6), which is the
-  deliberate webcam/stage arrangement: video window high near the camera,
-  working window below it.
+* **`Z` and `X` overlap by 10% of the height** (rows 4–5), which is the
+  deliberate webcam/stage arrangement: `Z` high near the camera, `X` below it.
 
 ## How Moom can be driven
 
@@ -101,7 +100,12 @@ Each entry in the array is a dictionary:
 * `Action` — `19` move & zoom, `1001` saved layout (carries a `Snapshot` array
   of per-window frames), `-101` section header (uses `Title`), `0` separator.
 * `Relative Frame` — `{{x, y}, {w, h}}` as fractions of the screen, **origin
-  top-left**: `{{0.25, 0}, {0.5, 0.6}}` is the top-centre half-width region.
+  bottom-left**, AppKit style: `{{0.25, 0}, {0.5, 0.6}}` is the *bottom*-centre
+  half-width region. The saved layouts settle it — a snapshot records a screen
+  1692px tall whose available frame is 1667px tall at origin y 0, so the menu
+  bar comes off the top while the origin stays at the bottom. `regions.py`
+  writes row bands top-down, the way people describe them, and flips them in
+  `frame()`.
 * `Configuration Grid` — optional per-action override recording the grid the
   action was *authored* on. It is editor metadata; the relative frame is the
   truth, so generated frames need not respect the global grid.
@@ -151,7 +155,10 @@ natively as `HYPR(KC_K)` — no macro, no inter-stroke delay, nothing to leak
 into the focused app if Moom is slow. Titles make every region AppleScript-
 addressable for composite layouts later.
 
-Alfred owns ⌃⌥⇧⌘Space, so full screen sits on `'` / `` ` `` instead. If
+Alfred owns ⌃⌥⇧⌘Space, so full screen sits on `'` / `Tab` instead. `` ` ``
+is deliberately left unmapped on the layer: held left Option it still sends
+⌥`, which is Moom's own keyboard controller — mapping it there would have
+swallowed the overlay the layer is meant to complement. If
 anything else turns out to hold a Hyper chord, `--chord meh` regenerates the
 whole set on ⌃⌥⇧ (no Command) rather than picking at individual keys.
 

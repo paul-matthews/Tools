@@ -92,12 +92,11 @@ def to_cells(value, divisions):
 
 
 def ascii_map(frame, columns, rows):
-    """Draw the region on the configuration grid."""
+    """Draw the region on the configuration grid, top row first."""
     x, y, w, h = frame
     left, _ = to_cells(x, columns)
-    top, _ = to_cells(y, rows)
     right, _ = to_cells(x + w, columns)
-    bottom, _ = to_cells(y + h, rows)
+    top, bottom = rows_from_top(y, h, rows)
     lines = []
     for row in range(rows):
         cells = "".join(
@@ -106,6 +105,11 @@ def ascii_map(frame, columns, rows):
         )
         lines.append(f"    |{cells}|")
     return lines, (left, top, right, bottom)
+
+
+def rows_from_top(y, h, rows):
+    """Moom's y is measured from the bottom; report rows counting from the top."""
+    return round((1 - (y + h)) * rows), round((1 - y) * rows)
 
 
 def grid_for(control, columns, rows):
@@ -171,12 +175,14 @@ def main():
 
         x, y, w, h = frame
         left, left_ok = to_cells(x, columns)
-        top, top_ok = to_cells(y, rows)
         right, right_ok = to_cells(x + w, columns)
-        bottom, bottom_ok = to_cells(y + h, rows)
+        _, top_ok = to_cells(y, rows)
+        _, bottom_ok = to_cells(y + h, rows)
+        top, bottom = rows_from_top(y, h, rows)
         aligned = all((left_ok, top_ok, right_ok, bottom_ok))
         print(f"     x {x:.4f} y {y:.4f} w {w:.4f} h {h:.4f}")
-        print(f"     cells columns {left}-{right} of {columns}, rows {top}-{bottom} of {rows}"
+        print(f"     cells columns {left}-{right} of {columns}, "
+              f"rows {top}-{bottom} of {rows} from the top"
               f"{'' if aligned else '  (OFF-GRID)'}")
 
         # Twins of one region (single key + global chord) are expected;

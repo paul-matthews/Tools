@@ -18,7 +18,10 @@ mirrors position on screen; the row chooses the vertical anchor:
     Q  W  E  R  T                    Y  U  I  O  P     top-anchored
     A  S  D  F  G                    H  J  K  L  ;     full height
     Z  X  C  V  B                    N  M  ,  .  /     bottom-anchored
-    `  full screen                   '                 full screen
+    Tab  full screen                 '                 full screen
+
+` is left unmapped on purpose: held left Option, it still sends ⌥` and
+opens Moom's keyboard controller.
 
        ⅓L ½L ½C ½R ⅓R                   ⅓L ½L ½C ½R ⅓R
 
@@ -46,7 +49,10 @@ COLUMN_BANDS = {
     "side-r":   (9, 12),
 }
 
-# Row bands, as [start, end) cells of 10. Vertical thirds are deliberately
+# Row bands, as [start, end) cells of 10 counted DOWN FROM THE TOP, which is
+# how people describe them. Moom stores frames in AppKit coordinates with the
+# origin at the bottom left, so frame() flips them. Vertical thirds are
+# deliberately
 # 30/70 rather than 33/67: a 10-row grid cannot express thirds, and 72px of
 # difference on a 2160px screen is not worth an off-grid frame.
 ROW_BANDS = {
@@ -77,7 +83,7 @@ KEYS = {
     "Z": (6, "KC_Z"),  "X": (7, "KC_X"),  "C": (8, "KC_C"),
     "V": (9, "KC_V"),  "B": (11, "KC_B"),
     "1": (18, "KC_1"), "2": (19, "KC_2"), "3": (20, "KC_3"),
-    "4": (21, "KC_4"), "5": (23, "KC_5"), "`": (50, "KC_GRV"),
+    "4": (21, "KC_4"), "5": (23, "KC_5"), "Tab": (48, "KC_TAB"),
 }
 
 # The window layer, one block per hand, for the cheat sheet. None is a gap.
@@ -94,7 +100,7 @@ LAYOUTS = {
         ["Q", "W", "E", "R", "T"],
         ["A", "S", "D", "F", "G"],
         ["Z", "X", "C", "V", "B"],
-        ["`"],
+        ["Tab"],
     ],
 }
 
@@ -103,7 +109,7 @@ LAYOUTS = {
 # shows, so it has to be unique and readable.
 REGIONS = [
     # group, id, title, columns, rows, right-hand key, left-hand key
-    ("Full height", "full-screen",  "Full screen",      "full",    "full", "'", "`"),
+    ("Full height", "full-screen",  "Full screen",      "full",    "full", "'", "Tab"),
     ("Full height", "third-left",   "Left third",       "third-l", "full", "H", "A"),
     ("Full height", "half-left",    "Left half",        "half-l",  "full", "J", "S"),
     ("Full height", "half-centre",  "Centre half",      "half-c",  "full", "K", "D"),
@@ -168,18 +174,29 @@ def regions():
 
 
 def frame(region):
-    """Region -> (x, y, w, h) as fractions of the screen, origin top-left."""
+    """Region -> (x, y, w, h) as fractions, in Moom's own coordinates.
+
+    Moom measures y from the BOTTOM of the screen (AppKit convention: the
+    menu bar comes off the top while the origin stays at the bottom), so the
+    top-down row band is flipped here and nowhere else.
+    """
     left, right = region["columns"]
     top, bottom = region["rows"]
     return (
         left / GRID_COLUMNS,
-        top / GRID_ROWS,
+        (GRID_ROWS - bottom) / GRID_ROWS,
         (right - left) / GRID_COLUMNS,
         (bottom - top) / GRID_ROWS,
     )
 
 
 def pixels(region, width, height):
-    """Region -> (x, y, w, h) in pixels on a screen of this size."""
-    x, y, w, h = frame(region)
-    return round(x * width), round(y * height), round(w * width), round(h * height)
+    """Region -> (x, y, w, h) in pixels, y from the TOP, for human-readable output."""
+    left, right = region["columns"]
+    top, bottom = region["rows"]
+    return (
+        round(left / GRID_COLUMNS * width),
+        round(top / GRID_ROWS * height),
+        round((right - left) / GRID_COLUMNS * width),
+        round((bottom - top) / GRID_ROWS * height),
+    )

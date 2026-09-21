@@ -39,14 +39,14 @@ Hold the window-layer key, then the key below. The map is mirrored, so either ha
   Z     X     C     V     B
  ⅓L▄   ½L▄   ½C▄   ½R▄   ⅓R▄
 
-  `
+ Tab
  FULL
 
 ```
 
 | Keys | Region | Columns (of 12) | Rows (of 10) | Pixels |
 | --- | --- | --- | --- | --- |
-| `'` / ``` | Full screen | 0–12 | 0–10 | 5120×2160 at 0,0 |
+| `'` / `Tab` | Full screen | 0–12 | 0–10 | 5120×2160 at 0,0 |
 | `H` / `A` | Left third | 0–4 | 0–10 | 1707×2160 at 0,0 |
 | `J` / `S` | Left half | 0–6 | 0–10 | 2560×2160 at 0,0 |
 | `K` / `D` | Centre half | 3–9 | 0–10 | 2560×2160 at 1280,0 |
@@ -74,7 +74,7 @@ Both keys of a pair send the same chord (⌃⌥⇧⌘), so Moom sees one action 
 
 | Region | Right hand | Left hand |
 | --- | --- | --- |
-| Full screen | `'` → `HYPR(KC_QUOT)` | ``` → `HYPR(KC_QUOT)` |
+| Full screen | `'` → `HYPR(KC_QUOT)` | `Tab` → `HYPR(KC_QUOT)` |
 | Left third | `H` → `HYPR(KC_H)` | `A` → `HYPR(KC_H)` |
 | Left half | `J` → `HYPR(KC_J)` | `S` → `HYPR(KC_J)` |
 | Centre half | `K` → `HYPR(KC_K)` | `D` → `HYPR(KC_K)` |
