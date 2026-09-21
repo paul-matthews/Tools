@@ -127,7 +127,9 @@ pair, `--chord meh` moves every chord to ⌃⌥⇧ if something claims a Hyper o
 ## Files
 
 * `regions.py` — the region table. Edit by hand.
-* `actions.py` — the actions table: apps to focus, modes to enter. Edit by hand.
+* `actions.yaml` — the actions table: apps to focus, modes to enter. Edit by
+  hand; no YAML library needed to read it.
+* `actions.py`, `miniyaml.py` — load and validate that file.
 * `actions-gen.py` — generate the AppleScripts and cheat sheet for the actions
   layer.
 * `moom-gen.py` — generate Moom actions, the palette and a cheat sheet.
@@ -173,10 +175,41 @@ Apps are addressed by **bundle identifier**, not name: it survives renames,
 and it is the only way to reach a Chrome PWA, which is a real application
 bundle rather than a window of Chrome. Calendar and Chat are both PWAs.
 
-Modes compose steps — `place` an app in a region by title, `layout` to run a
-saved Moom layout, `shortcut` to run something from Shortcuts.app, `url` to
-open a link. Saved layouts are the right choice when a mode has to place
-several windows of one app; `place` steps only reach the frontmost window.
+Modes compose steps, and `actions.yaml` is the file to edit:
+
+```yaml
+modes:
+  Meeting:
+    key: "1"
+    steps:
+      - layout: Meeting        # a saved Moom layout, by name
+      - focus: Obsidian        # ends focused here, ready to type
+  Notes:
+    key: "3"
+    steps:
+      - place: Chrome          # an app from the list above
+        region: Left third     # a region title from regions.py
+      - place: Obsidian
+        region: Right two-thirds
+```
+
+Also `shortcut:` to run something from Shortcuts.app — that is how Focus modes
+get in — and `url:` to open a link. Steps run in order and the last one
+decides where focus ends up.
+
+`layout:` is the right choice when a mode has to place several windows of one
+app: `place` only ever reaches the frontmost window, so a layout recorded in
+Moom is the only way to express "both terminals".
+
+Region titles are checked against `regions.py` at generation time, app names
+against the list above, so a typo fails with the line rather than producing a
+script that quietly does nothing. Scripts for actions you have removed are
+deleted on regeneration, so nothing stale stays bound in Alfred.
+
+YAML is read by `miniyaml.py`, a parser for the subset these files use —
+macOS ships no YAML library, and this is meant to work without installing
+anything. Every scalar is a string; anything fancier raises an error naming
+the line.
 
 ## The design
 

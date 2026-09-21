@@ -1,4 +1,4 @@
-"""The actions table: apps to focus and modes to enter, one key each.
+"""Load and validate actions.yaml.
 
 The window layer is spatial — position on the keyboard means position on the
 screen — so it is mirrored under both hands. Actions are the opposite: the
@@ -7,71 +7,89 @@ and no mirror.
 
 Actions use Meh chords (⌃⌥⇧) rather than Hyper, because the window layer has
 already claimed Hyper on most letters. Alfred listens for them.
-
-Bundle identifiers beat application names: they survive renames, and they are
-the only way to address a Chrome PWA, which is a real application bundle with
-a generated identifier rather than a window of Chrome.
 """
 
-# key, what it is called, bundle identifier
-APPS = [
-    ("C", "Chrome", "com.google.chrome"),
-    ("T", "iTerm2", "com.googlecode.iterm2"),
-    ("V", "VSCodium", "com.vscodium"),
-    ("O", "Obsidian", "md.obsidian"),
-    ("A", "Calendar", "com.google.chrome.app.kjbdgfilnfhdoflbpgamdcdgpehopbep"),
-    ("W", "Chat", "com.google.chrome.app.mdpkiolbdkhdjpekfbkbmhigcaggjagi"),
-    ("G", "Gemini", "com.google.geminimacos"),
-    ("D", "Drive", "com.google.drivefs"),
-    ("F", "Finder", "com.apple.finder"),
-    ("P", "1Password", "com.1password.1password"),
-]
+from __future__ import annotations
 
-# Steps a mode can take. Each is a tuple whose first element names the kind:
-#
-#   ("layout", "Meeting")          run a saved Moom layout by title — use this
-#                                  when several windows of one app must be
-#                                  placed, which region moves cannot express
-#   ("place", "com.x.y", "Region") activate that app, then run that region's
-#                                  Moom action by title, from regions.py
-#   ("focus", "com.x.y")           activate an app and leave it where it is
-#   ("shortcut", "Deep Work")      run a shortcut from Shortcuts.app — this is
-#                                  how Focus modes, Do Not Disturb and
-#                                  anything else scriptable gets done
-#   ("url", "https://…")           open a link in the default browser
-#
-# The modes below are a starting shape, not a claim about how you work. The
-# Moom region titles they use come straight from regions.py.
-MODES = [
-    ("1", "Meeting", [
-        ("place", "com.google.chrome.app.kjbdgfilnfhdoflbpgamdcdgpehopbep", "Camera stage"),
-        ("place", "md.obsidian", "Below camera"),
-    ]),
-    ("2", "Deep work", [
-        ("place", "com.vscodium", "Left two-thirds"),
-        ("place", "com.googlecode.iterm2", "Right third"),
-        ("shortcut", "Deep Work"),
-    ]),
-    ("3", "Review", [
-        ("place", "com.google.chrome", "Left half"),
-        ("place", "com.googlecode.iterm2", "Right half"),
-    ]),
-]
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import miniyaml  # noqa: E402
+
+CONFIG = Path(__file__).resolve().parent / "actions.yaml"
+
+# Step kind -> the extra field it takes, if any.
+STEP_FIELDS = {
+    "layout": None,
+    "place": "region",
+    "focus": None,
+    "shortcut": None,
+    "url": None,
+}
 
 
-def actions():
-    """Apps and modes as one validated list, in key order."""
-    seen, out = {}, []
-    for key, name, bundle in APPS:
-        out.append({"kind": "app", "key": key, "name": name, "bundle": bundle})
-    for key, name, steps in MODES:
-        for step in steps:
-            if step[0] not in ("layout", "place", "focus", "shortcut", "url"):
-                raise ValueError(f"{name}: unknown step kind {step[0]!r}")
-        out.append({"kind": "mode", "key": key, "name": name, "steps": steps})
+def _step(raw, apps, where):
+    """One YAML step mapping -> a tuple the generator can render."""
+    kinds = [key for key in raw if key in STEP_FIELDS]
+    if len(kinds) != 1:
+        raise miniyaml.ConfigError(
+            f"{where}: a step needs exactly one of "
+            f"{', '.join(sorted(STEP_FIELDS))}, got {sorted(raw)}")
+    kind = kinds[0]
+    value, extra = raw[kind], STEP_FIELDS[kind]
+
+    unexpected = set(raw) - {kind} - ({extra} if extra else set())
+    if unexpected:
+        raise miniyaml.ConfigError(
+            f"{where}: '{kind}' does not take {', '.join(sorted(unexpected))}")
+
+    if kind in ("place", "focus"):
+        if value not in apps:
+            raise miniyaml.ConfigError(
+                f"{where}: no app named {value!r}. Known: "
+                f"{', '.join(sorted(apps))}")
+        bundle = apps[value]
+        if kind == "focus":
+            return ("focus", bundle)
+        if not raw.get("region"):
+            raise miniyaml.ConfigError(f"{where}: 'place' needs a 'region'")
+        return ("place", bundle, raw["region"])
+    return (kind, value)
+
+
+def actions(path=CONFIG):
+    """Apps and modes from the config, validated, in file order."""
+    config = miniyaml.load(path)
+    for section in ("apps", "modes"):
+        if not isinstance(config.get(section), dict):
+            raise miniyaml.ConfigError(f"{path}: missing a '{section}:' section")
+
+    bundles, out = {}, []
+    for name, entry in config["apps"].items():
+        for field in ("key", "bundle"):
+            if not (entry or {}).get(field):
+                raise miniyaml.ConfigError(f"app {name!r}: needs a '{field}'")
+        bundles[name] = entry["bundle"]
+        out.append({"kind": "app", "key": entry["key"], "name": name,
+                    "bundle": entry["bundle"]})
+
+    for name, entry in config["modes"].items():
+        if not (entry or {}).get("key"):
+            raise miniyaml.ConfigError(f"mode {name!r}: needs a 'key'")
+        steps = entry.get("steps") or []
+        if not steps:
+            raise miniyaml.ConfigError(f"mode {name!r}: needs at least one step")
+        out.append({"kind": "mode", "key": entry["key"], "name": name,
+                    "steps": [_step(step, bundles, f"mode {name!r}")
+                              for step in steps]})
+
+    seen = {}
     for action in out:
         if action["key"] in seen:
-            raise ValueError(f"{action['name']}: key {action['key']!r} already "
-                             f"used by {seen[action['key']]}")
+            raise miniyaml.ConfigError(
+                f"{action['name']}: key {action['key']!r} already used "
+                f"by {seen[action['key']]}")
         seen[action["key"]] = action["name"]
     return out

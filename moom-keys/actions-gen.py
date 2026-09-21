@@ -112,11 +112,22 @@ def main():
 
     out = Path(args.output).expanduser()
     out.mkdir(parents=True, exist_ok=True)
+
+    written = set()
     for action in items:
         name = action["name"].lower().replace(" ", "-")
         path = out / f'{action["kind"]}-{name}.applescript'
         path.write_text("\n".join(applescript(action, titles)) + "\n")
+        written.add(path.name)
         print(f'{action["key"]}  {action["name"]:<12} {path}')
+
+    # Rename an action and its old script would linger, still bound in Alfred
+    # and still doing the old thing. This directory is generated, so anything
+    # not written this time does not belong.
+    for stale in sorted(out.glob("*.applescript")):
+        if stale.name not in written:
+            stale.unlink()
+            print(f'   removed stale {stale.name}")'.replace('")', ''))
 
     if args.cheatsheet:
         Path(args.cheatsheet).write_text(cheat_sheet(items, "⌃⌥⇧"))
