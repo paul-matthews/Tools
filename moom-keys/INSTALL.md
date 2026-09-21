@@ -74,19 +74,23 @@ what to fix.
 
 | # | Do this | Expect | If it fails |
 | --- | --- | --- | --- |
-| 1 | **⌥`** then **K** | Window jumps to the centred half | Moom was running during the import — quit it and import again |
-| 2 | **⌃⌥⇧⌘K** by hand | Same jump | Regenerate with `--no-device-bits` and re-import |
+| 1 | **⌥`** then **D** | Window jumps to the centred half | Moom was running during the import — quit it and import again |
+| 2 | **⌃⌥⇧⌘D** by hand | Same jump | Regenerate with `--no-device-bits` and re-import |
 | 3 | Tap **Caps** | Escape | The keymap did not take; re-run `launcher-inspect.py` on the patched file |
-| 4 | Hold **Caps**, press **K** | Same jump | As 3 — check layer 3 in the inspector output |
+| 4 | Hold **Caps**, press **K** | Same jump (K sends D's chord) | As 3 — check layer 3 in the inspector output |
 | 5 | Hold **left Option**, press **D** | Same jump | `LM` did not take; as a fallback the Caps route still works |
 | 6 | **⌥←** in any text field | Jumps a word left | `LM` is not passing Option through; report it, the fallback is `MO(3)` |
 | 7 | Hold **left Option**, press **`** | Moom's overlay opens | `` ` `` got mapped on the layer; it must stay transparent |
 | 8 | Hold **Caps**, press **I** | Window goes to the **top** centre | Row bands are inverted — `frame()` flips them for Moom's bottom-left origin |
 | 9 | Hold **Caps**, press **,** | Window goes to the **bottom** centre | The chord is `⌃⌥⇧⌘C`, not `⌃⌥⇧⌘,` — re-patch the keymap and re-import the plist together |
 
-Checks 1–2 are the Moom half, 3–6 the keyboard half. If 1 works and 2 does
+Checks 1–2 are the Moom half, 3–9 the keyboard half. If 1 works and 2 does
 not, the modifier flags are wrong and nothing on the keyboard will fire; fix
 that before touching the keymap.
+
+The overlay in check 1 takes the **chord key** — the left-hand letter — while
+the keyboard checks press whichever physical key you like, since both keys of
+a pair send the same chord. `CHEATSHEET.md` lists all three columns.
 
 ## Rolling back
 
