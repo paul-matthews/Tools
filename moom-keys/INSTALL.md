@@ -72,13 +72,18 @@ afterwards; the cable is only needed for programming.
 Independent of the window layer, and safe to leave until later.
 
 ```sh
-./actions-gen.py -o ~/bin/moom-keys -c ACTIONS.md
+./actions-gen.py -c ACTIONS.md
+osascript scripts/mode-meeting.applescript
 ```
 
-Run one of the generated scripts from Script Editor to prove it does what you
-want. Then bind each to its Meh chord in Alfred: a **Hotkey** trigger
+The second line runs the mode there and then — no editor, no hotkey, nothing
+to paste. If the windows land where you expect, the whole chain is proven:
+AppleScript reaching Moom, region titles resolving, bundle identifiers
+resolving, and the delay being long enough.
+
+Then bind each script to its Meh chord in Alfred: a **Hotkey** trigger
 connected to a **Run Script** action calling `/usr/bin/osascript` with the
-script's path. Powerpack required.
+script's path in this checkout. Powerpack required.
 
 Add `--actions-layer 2` when patching the keymap to put the chords on the
 keyboard, held by Tab:

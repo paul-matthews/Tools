@@ -137,6 +137,7 @@ pair, `--chord meh` moves every chord to ⌃⌥⇧ if something claims a Hyper o
 * `launcher-inspect.py` — decode a Launcher export: every layer, and which
   layers are reachable from which.
 * `qmk.py` — the QMK keycode numbers and encodings both Launcher tools need.
+* `scripts/` — generated AppleScripts, committed so they travel with the repo.
 * `CHEATSHEET.md`, `ACTIONS.md` — generated; the printable references.
 * `INSTALL.md` — the runbook, with verification and rollback.
 
@@ -152,14 +153,21 @@ Hyper on most letters. Alfred listens for them and runs a generated
 AppleScript:
 
 ```sh
-./actions-gen.py -o ~/bin/moom-keys -c ACTIONS.md
+./actions-gen.py -c ACTIONS.md
 ./launcher-patch.py ~/Downloads/Keymap-K3_Max_RGB.json \
     --layer 3 --actions-layer 2 -o ~/Downloads/Keymap-windows.json
 ```
 
-Each script needs one Alfred hotkey, bound once. Every script also runs
-standalone from Script Editor, so an action can be proven before any hotkey
-exists.
+The scripts land in `scripts/` and are committed, so `git pull` delivers them
+to any machine and Alfred can point straight at the checkout — nothing to copy
+anywhere. Each runs standalone, so an action can be proven before any hotkey
+exists:
+
+```sh
+osascript scripts/mode-meeting.applescript
+```
+
+Then one Alfred hotkey each, bound once.
 
 Apps are addressed by **bundle identifier**, not name: it survives renames,
 and it is the only way to reach a Chrome PWA, which is a real application

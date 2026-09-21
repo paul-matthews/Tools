@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """Generate the AppleScripts and cheat sheet for the actions layer.
 
-One script per action, written to a directory you point Alfred at. Alfred
-binds each to its Meh chord (⌃⌥⇧ + the action's key); the keyboard's actions
-layer sends that chord.
+One script per action, written into `scripts/` beside this file and committed,
+so a `git pull` delivers them to any machine — no copying files around, and
+Alfred can point straight at the checkout.
 
-    ./actions-gen.py -o ~/bin/moom-keys -c ACTIONS.md
+    ./actions-gen.py -c ACTIONS.md
 
-Scripts are plain AppleScript, so each can be run from Script Editor to see
-what it does before any hotkey exists.
+Scripts are plain AppleScript. Run one directly to see what it does, long
+before any hotkey exists:
+
+    osascript scripts/mode-meeting.applescript
+
+Alfred binds each to its Meh chord (⌃⌥⇧ + the action's key); the keyboard's
+actions layer sends that chord.
 """
 
 from __future__ import annotations
@@ -95,8 +100,10 @@ def cheat_sheet(items, chord_glyphs):
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("-o", "--output", required=True,
-                        help="directory to write the AppleScripts into")
+    parser.add_argument("-o", "--output",
+                        default=str(Path(__file__).resolve().parent / "scripts"),
+                        help="directory to write the AppleScripts into "
+                             "(default: scripts/ beside this file)")
     parser.add_argument("-c", "--cheatsheet", help="also write a markdown cheat sheet")
     args = parser.parse_args()
 
