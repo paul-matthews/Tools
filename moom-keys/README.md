@@ -159,6 +159,8 @@ whole set on ⌃⌥⇧ (no Command) rather than picking at individual keys.
 
 * `regions.py` — the region table. The only file to edit by hand.
 * `moom-gen.py` — generate Moom actions, the palette and a cheat sheet from it.
+* `launcher-patch.py` — write the window layer into an exported Keychron
+  Launcher keymap.
 * `moom-inspect.py` — decode an exported plist: grid, hotkeys, every action as
   grid cells and an ASCII map, flagging duplicates and off-grid frames.
 * `CHEATSHEET.md` — generated; the printable reference.
@@ -189,11 +191,20 @@ Two things to verify on first import, both one-line fixes if wrong:
   inside the ⌥` overlay; if one is claimed by Moom's built-in controls,
   change that region's key in `regions.py`.
 
+The keyboard side takes the Launcher export and gives it back patched:
+
+```sh
+./launcher-patch.py k3max.json --layer 3 -o k3max-windows.json
+```
+
+Keys are located by what they type on the base layer rather than by matrix
+position, so the patch needs no keyboard definition and does not care about
+ANSI or ISO. The Max series exposes four layers (macOS base and Fn, Windows
+base and Fn), so the window layer has to reuse one — layer 3, the Windows Fn
+layer, is the least costly if the Mac/Win switch never leaves Mac.
+
 ## Next
 
-The Keychron side: a patch for an exported Launcher keymap that writes the
-chord keycodes onto both hands of the window layer, `LM(<layer>, MOD_LALT)`
-onto left Option and `LT(<layer>, KC_ESC)` onto Caps Lock. The Max series
-exposes four layers (macOS base and Fn, Windows base and Fn), so the window
-layer has to reuse one — layer 3, the Windows Fn layer, is the least costly
-if the Mac/Win switch never leaves Mac.
+Confirm against a real Launcher export: which layers are already spoken for,
+and whether Launcher accepts `LM(3,MOD_LALT)` and `HYPR(...)` in its custom
+keycode field. Then the AppleScript layer for composite window arrangements.
