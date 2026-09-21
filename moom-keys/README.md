@@ -147,15 +147,26 @@ transparent so ⌥←, ⌥⌫ and ⌥-click keep working. Caps Lock as
 `LT(<layer>, KC_ESC)` is the same layer under the left pinky for when the
 right hand is doing the pressing, and tapped it is still Escape.
 
+**The chord is chosen separately from the keys that send it.** A region's
+chord is always a letter or a digit; the two physical keys that send it can
+be anything. That matters because punctuation under Hyper is where macOS
+keeps system shortcuts — ⌃⌥⌘, and ⌃⌥⌘. adjust contrast, ⇧⌘/ opens Help
+search — and chords on `,` `.` `/` never reached Moom at all, while the
+letter ones worked first time. So the bottom row's keys send `⌃⌥⇧⌘C`, `V`
+and `B`, the chords of the letters under the left hand, and nothing is bound
+to a punctuation chord anywhere. Full screen is the same trick for a
+different reason: Tab sends Return's chord, because ⌘Tab is the app
+switcher and Hyper contains Command.
+
 **Two bindings per region, because Moom allows one hotkey per action.** Each
 region generates a pair: a controller-restricted single key, which keeps the
 ⌥` overlay working as the cheat sheet, and the same key under a global chord
 for one-keystroke invocation from the window layer. QMK emits the chord
-natively as `HYPR(KC_K)` — no macro, no inter-stroke delay, nothing to leak
+natively as `HYPR(KC_D)` — no macro, no inter-stroke delay, nothing to leak
 into the focused app if Moom is slow. Titles make every region AppleScript-
 addressable for composite layouts later.
 
-Alfred owns ⌃⌥⇧⌘Space, so full screen sits on `'` / `Tab` instead. `` ` ``
+Alfred owns ⌃⌥⇧⌘Space, so full screen is on `Tab` / `'` instead. `` ` ``
 is deliberately left unmapped on the layer: held left Option it still sends
 ⌥`, which is Moom's own keyboard controller — mapping it there would have
 swallowed the overlay the layer is meant to complement. If

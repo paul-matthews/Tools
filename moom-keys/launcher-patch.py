@@ -81,8 +81,8 @@ def patch(export, layer_index, base_index, mods, blank, caps, left_option):
             entry["val"] = qmk.TRANSPARENT
 
     for region in spec.regions():
-        keycode = qmk.CODES[spec.KEYS[region["key"]][1]]
-        for label in (region["key"], region["mirror"]):
+        keycode = qmk.CODES[spec.KEYS[region["chord"]][1]]
+        for label in (region["left"], region["right"]):
             target = qmk.CODES[spec.KEYS[label][1]]
             place = locate(found, [target], f"{region['title']} ({label})", warnings)
             if place and write(window, place, qmk.chord(mods, keycode)):

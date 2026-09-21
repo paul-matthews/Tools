@@ -82,6 +82,7 @@ what to fix.
 | 6 | **⌥←** in any text field | Jumps a word left | `LM` is not passing Option through; report it, the fallback is `MO(3)` |
 | 7 | Hold **left Option**, press **`** | Moom's overlay opens | `` ` `` got mapped on the layer; it must stay transparent |
 | 8 | Hold **Caps**, press **I** | Window goes to the **top** centre | Row bands are inverted — `frame()` flips them for Moom's bottom-left origin |
+| 9 | Hold **Caps**, press **,** | Window goes to the **bottom** centre | The chord is `⌃⌥⇧⌘C`, not `⌃⌥⇧⌘,` — re-patch the keymap and re-import the plist together |
 
 Checks 1–2 are the Moom half, 3–6 the keyboard half. If 1 works and 2 does
 not, the modifier flags are wrong and nothing on the keyboard will fire; fix
