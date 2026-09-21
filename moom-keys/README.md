@@ -111,14 +111,74 @@ Each entry in the array is a dictionary:
   `Control` `0x40000`, `Shift` `0x20000`, so Hyper is `0x1E0100`.
 * `Title` — optional, and required for AppleScript addressing.
 
+## The design
+
+**Regions are a grammar, not a list of rectangles.** Every region is a column
+band crossed with a row band, both whole cells of the 12 × 10 grid, so nothing
+is ever off-grid and the set can be reasoned about rather than remembered:
+
+| Column bands (427px per cell) | Cells | Row bands (216px per cell) | Cells |
+| --- | --- | --- | --- |
+| `third-l` / `third-c` / `third-r` | 0–4 / 4–8 / 8–12 | `full` | 0–10 |
+| `half-l` / `half-c` / `half-r` | 0–6 / 3–9 / 6–12 | `cam` (top 60%) | 0–6 |
+| `two3-l` / `two3-r` | 0–8 / 4–12 | `stage` (bottom 50%) | 5–10 |
+| `side-l` / `side-r` | 0–3 / 9–12 | `upper` / `lower` (70%) | 0–7 / 3–10 |
+
+Vertical thirds became 30/70. A 10-row grid cannot express 33/67, and 72px on
+a 2160px screen is not worth carrying an off-grid frame forever.
+
+**The keyboard is a map of the screen.** Held Caps Lock selects a window
+layer (tapped, it is still Escape); on that layer the right hand *is* the
+monitor — row chooses the vertical anchor, column chooses the horizontal
+position. `K` is the centred half, `I` the camera stage above it, `,` the
+working window below it.
+
+**Two bindings per region, because Moom allows one hotkey per action.** Each
+region generates a pair: a controller-restricted single key, which keeps the
+⌥` overlay working as the cheat sheet, and the same key under Hyper
+(⌃⌥⇧⌘) for one-keystroke invocation from the window layer. QMK emits Hyper
+natively as `HYPR(KC_K)` — no macro, no inter-stroke delay, nothing to leak
+into the focused app if Moom is slow. Titles make every region AppleScript-
+addressable for composite layouts later.
+
 ## Files
 
+* `regions.py` — the region table. The only file to edit by hand.
+* `moom-gen.py` — generate Moom actions, the palette and a cheat sheet from it.
 * `moom-inspect.py` — decode an exported plist: grid, hotkeys, every action as
   grid cells and an ASCII map, flagging duplicates and off-grid frames.
+* `CHEATSHEET.md` — generated; the printable reference.
 
-## Still to build
+## Using it
 
-A `regions` table as the single source of truth, generating: the
-`Custom Controls (4001)` array (both hotkey kinds per region), a Keychron
-Launcher keymap patch for the window layer, and a printable cheat sheet laid
-out like the keys themselves.
+```sh
+defaults export com.manytricks.Moom ~/Desktop/Moom.plist
+./moom-gen.py ~/Desktop/Moom.plist -o ~/Desktop/Moom-new.plist -c CHEATSHEET.md
+osascript -e 'quit app "Moom"'
+defaults import com.manytricks.Moom ~/Desktop/Moom-new.plist
+open -a Moom
+```
+
+Generated actions carry deterministic identifiers derived from their region
+id, so regenerating updates them in place instead of piling up duplicates.
+Saved layouts are carried across; the hand-drawn move & zoom actions are
+replaced. `--keep-existing` keeps them instead, `--no-hyper-keys` and
+`--no-controller-keys` drop either half of each pair.
+
+Two things to verify on first import, both one-line fixes if wrong:
+
+* **Hyper chords firing.** The generated flags include the device-dependent
+  left-modifier bits, matching what Moom records when you press a chord by
+  hand and what `HYPR()` sends. If a chord does not fire, regenerate with
+  `--no-device-bits`.
+* **Single-key collisions.** `Space` and the punctuation keys are assumed free
+  inside the ⌥` overlay; if one is claimed by Moom's built-in controls,
+  change that region's key in `regions.py`.
+
+## Next
+
+The Keychron side: a patch for an exported Launcher keymap that writes
+`HYPR(...)` onto the window layer and `LT(<layer>, KC_ESC)` onto Caps Lock.
+The Max series exposes four layers (macOS base and Fn, Windows base and Fn),
+so the window layer has to reuse one — layer 3, the Windows Fn layer, is the
+least costly if the Mac/Win switch never leaves Mac.

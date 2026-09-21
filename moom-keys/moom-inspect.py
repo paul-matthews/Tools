@@ -179,7 +179,9 @@ def main():
         print(f"     cells columns {left}-{right} of {columns}, rows {top}-{bottom} of {rows}"
               f"{'' if aligned else '  (OFF-GRID)'}")
 
-        key = (round(x, 4), round(y, 4), round(w, 4), round(h, 4))
+        # Twins of one region (single key + global chord) are expected;
+        # only flag repeats within the same hotkey scope.
+        key = (hotkey_scope, round(x, 4), round(y, 4), round(w, 4), round(h, 4))
         if key in seen:
             print(f"     duplicate of [{seen[key]}]")
         else:
