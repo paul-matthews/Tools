@@ -166,8 +166,12 @@ whole set on ⌃⌥⇧ (no Command) rather than picking at individual keys.
 * `moom-inspect.py` — decode an exported plist: grid, hotkeys, every action as
   grid cells and an ASCII map, flagging duplicates and off-grid frames.
 * `CHEATSHEET.md` — generated; the printable reference.
+* `INSTALL.md` — the end-to-end runbook for both halves, and how to verify
+  and roll back each of them.
 
 ## Using it
+
+`INSTALL.md` is the full runbook, both halves. In short, for Moom:
 
 Quit Moom first: it holds its preferences in memory and writes them back on
 quit, which would clobber the import.
