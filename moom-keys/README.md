@@ -169,13 +169,28 @@ whole set on ⌃⌥⇧ (no Command) rather than picking at individual keys.
 
 ## Using it
 
+Quit Moom first: it holds its preferences in memory and writes them back on
+quit, which would clobber the import.
+
 ```sh
-defaults export com.manytricks.Moom ~/Desktop/Moom.plist
-./moom-gen.py ~/Desktop/Moom.plist -o ~/Desktop/Moom-new.plist -c CHEATSHEET.md
 osascript -e 'quit app "Moom"'
+defaults export com.manytricks.Moom ~/Desktop/Moom-backup.plist   # keep this
+./moom-gen.py ~/Desktop/Moom-backup.plist -o ~/Desktop/Moom-new.plist -c CHEATSHEET.md
+./moom-inspect.py ~/Desktop/Moom-new.plist --no-map | less        # optional look
 defaults import com.manytricks.Moom ~/Desktop/Moom-new.plist
 open -a Moom
 ```
+
+To roll back, quit Moom and import the backup again:
+
+```sh
+osascript -e 'quit app "Moom"'
+defaults import com.manytricks.Moom ~/Desktop/Moom-backup.plist
+open -a Moom
+```
+
+macOS ships a Python 3 that runs all of this; nothing here has dependencies
+beyond the standard library.
 
 Generated actions carry deterministic identifiers derived from their region
 id, so regenerating updates them in place instead of piling up duplicates.
