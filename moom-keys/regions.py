@@ -8,20 +8,22 @@ Screen geometry assumed (Dell U4025QW, 5120 x 2160):
 
     one column cell = 426.7px      one row cell = 216px
 
-Layout of the window layer on the keyboard — physical position mirrors
-position on screen, row chooses the vertical anchor:
+The window layer carries the same map twice, once under each hand, so it can
+be driven one-handed with the other hand on the mouse. Physical position
+mirrors position on screen; the row chooses the vertical anchor:
 
-    number row        7           8                       0
-                      narrow L    centre third            narrow R
+    left hand                        right hand
 
-    top row      Y    U    I    O    P        top-anchored
-    home row  G  H    J    K    L    ;  '     full height
-    bottom row   N    M    ,    .    /        bottom-anchored
+    1  2  3  4  5                    6  7  8  9  0     width variants
+    Q  W  E  R  T                    Y  U  I  O  P     top-anchored
+    A  S  D  F  G                    H  J  K  L  ;     full height
+    Z  X  C  V  B                    N  M  ,  .  /     bottom-anchored
+    `  full screen                   '                 full screen
 
-              ⅓L   ½L  centre ½R   ⅓R         (G / ' = the two-thirds)
+       ⅓L ½L ½C ½R ⅓R                   ⅓L ½L ½C ½R ⅓R
 
-Space is the whole screen. Held Caps Lock selects the layer; tapped, it is
-still Escape.
+Mirrored keys send the same Hyper chord, so Moom sees one action either way.
+
 """
 
 # The configuration grid every band is expressed in. Matches Moom's own
@@ -58,54 +60,73 @@ ROW_BANDS = {
 # Key labels -> (macOS virtual key code, QMK keycode). The macOS code goes in
 # the Moom plist; the QMK one goes on the keyboard layer, wrapped in HYPR().
 KEYS = {
-    "G": (5, "KC_G"),     "H": (4, "KC_H"),     "J": (38, "KC_J"),
-    "K": (40, "KC_K"),    "L": (37, "KC_L"),    ";": (41, "KC_SCLN"),
-    "'": (39, "KC_QUOT"),
-    "Y": (16, "KC_Y"),    "U": (32, "KC_U"),    "I": (34, "KC_I"),
-    "O": (31, "KC_O"),    "P": (35, "KC_P"),
-    "N": (45, "KC_N"),    "M": (46, "KC_M"),    ",": (43, "KC_COMM"),
-    ".": (47, "KC_DOT"),  "/": (44, "KC_SLSH"),
-    "7": (26, "KC_7"),    "8": (28, "KC_8"),    "0": (29, "KC_0"),
-    "Space": (49, "KC_SPC"),
+    # right-hand block
+    "Y": (16, "KC_Y"), "U": (32, "KC_U"), "I": (34, "KC_I"),
+    "O": (31, "KC_O"), "P": (35, "KC_P"),
+    "H": (4, "KC_H"),  "J": (38, "KC_J"), "K": (40, "KC_K"),
+    "L": (37, "KC_L"), ";": (41, "KC_SCLN"),
+    "N": (45, "KC_N"), "M": (46, "KC_M"), ",": (43, "KC_COMM"),
+    ".": (47, "KC_DOT"), "/": (44, "KC_SLSH"),
+    "6": (22, "KC_6"), "7": (26, "KC_7"), "8": (28, "KC_8"),
+    "9": (25, "KC_9"), "0": (29, "KC_0"), "'": (39, "KC_QUOT"),
+    # left-hand block
+    "Q": (12, "KC_Q"), "W": (13, "KC_W"), "E": (14, "KC_E"),
+    "R": (15, "KC_R"), "T": (17, "KC_T"),
+    "A": (0, "KC_A"),  "S": (1, "KC_S"),  "D": (2, "KC_D"),
+    "F": (3, "KC_F"),  "G": (5, "KC_G"),
+    "Z": (6, "KC_Z"),  "X": (7, "KC_X"),  "C": (8, "KC_C"),
+    "V": (9, "KC_V"),  "B": (11, "KC_B"),
+    "1": (18, "KC_1"), "2": (19, "KC_2"), "3": (20, "KC_3"),
+    "4": (21, "KC_4"), "5": (23, "KC_5"), "`": (50, "KC_GRV"),
 }
 
-# Physical rows of the window layer, for the cheat sheet. None is a gap.
-PHYSICAL_ROWS = [
-    [None, "7", "8", None, "0"],
-    [None, "Y", "U", "I", "O", "P"],
-    ["G", "H", "J", "K", "L", ";", "'"],
-    [None, "N", "M", ",", ".", "/"],
-    ["Space"],
-]
+# The window layer, one block per hand, for the cheat sheet. None is a gap.
+LAYOUTS = {
+    "Right hand": [
+        ["6", "7", "8", "9", "0"],
+        ["Y", "U", "I", "O", "P"],
+        ["H", "J", "K", "L", ";"],
+        ["N", "M", ",", ".", "/"],
+        ["'"],
+    ],
+    "Left hand": [
+        ["1", "2", "3", "4", "5"],
+        ["Q", "W", "E", "R", "T"],
+        ["A", "S", "D", "F", "G"],
+        ["Z", "X", "C", "V", "B"],
+        ["`"],
+    ],
+}
 
 # id, title, column band, row band, key. Title is what AppleScript addresses
 # (`tell application "Moom" to run "Centre half"`) and what the ⌥` overlay
 # shows, so it has to be unique and readable.
 REGIONS = [
-    # group, id, title, columns, rows, key
-    ("Full height", "full-screen",  "Full screen",      "full",    "full", "Space"),
-    ("Full height", "third-left",   "Left third",       "third-l", "full", "H"),
-    ("Full height", "half-left",    "Left half",        "half-l",  "full", "J"),
-    ("Full height", "half-centre",  "Centre half",      "half-c",  "full", "K"),
-    ("Full height", "half-right",   "Right half",       "half-r",  "full", "L"),
-    ("Full height", "third-right",  "Right third",      "third-r", "full", ";"),
-    ("Full height", "two3-left",    "Left two-thirds",  "two3-l",  "full", "G"),
-    ("Full height", "two3-right",   "Right two-thirds", "two3-r",  "full", "'"),
-    ("Full height", "side-left",    "Narrow left",      "side-l",  "full", "7"),
-    ("Full height", "third-centre", "Centre third",     "third-c", "full", "8"),
-    ("Full height", "side-right",   "Narrow right",     "side-r",  "full", "0"),
+    # group, id, title, columns, rows, right-hand key, left-hand key
+    ("Full height", "full-screen",  "Full screen",      "full",    "full", "'", "`"),
+    ("Full height", "third-left",   "Left third",       "third-l", "full", "H", "A"),
+    ("Full height", "half-left",    "Left half",        "half-l",  "full", "J", "S"),
+    ("Full height", "half-centre",  "Centre half",      "half-c",  "full", "K", "D"),
+    ("Full height", "half-right",   "Right half",       "half-r",  "full", "L", "F"),
+    ("Full height", "third-right",  "Right third",      "third-r", "full", ";", "G"),
 
-    ("Top anchored", "third-left-top",  "Left third, top",   "third-l", "upper", "Y"),
-    ("Top anchored", "half-left-top",   "Left half, top",    "half-l",  "upper", "U"),
-    ("Top anchored", "camera",          "Camera stage",      "half-c",  "cam",   "I"),
-    ("Top anchored", "half-right-top",  "Right half, top",   "half-r",  "upper", "O"),
-    ("Top anchored", "third-right-top", "Right third, top",  "third-r", "upper", "P"),
+    ("Width variants", "side-left",    "Narrow left",      "side-l",  "full", "6", "1"),
+    ("Width variants", "two3-left",    "Left two-thirds",  "two3-l",  "full", "7", "2"),
+    ("Width variants", "third-centre", "Centre third",     "third-c", "full", "8", "3"),
+    ("Width variants", "two3-right",   "Right two-thirds", "two3-r",  "full", "9", "4"),
+    ("Width variants", "side-right",   "Narrow right",     "side-r",  "full", "0", "5"),
 
-    ("Bottom anchored", "third-left-bottom",  "Left third, bottom",  "third-l", "lower", "N"),
-    ("Bottom anchored", "half-left-bottom",   "Left half, bottom",   "half-l",  "lower", "M"),
-    ("Bottom anchored", "below-camera",       "Below camera",        "half-c",  "stage", ","),
-    ("Bottom anchored", "half-right-bottom",  "Right half, bottom",  "half-r",  "lower", "."),
-    ("Bottom anchored", "third-right-bottom", "Right third, bottom", "third-r", "lower", "/"),
+    ("Top anchored", "third-left-top",  "Left third, top",  "third-l", "upper", "Y", "Q"),
+    ("Top anchored", "half-left-top",   "Left half, top",   "half-l",  "upper", "U", "W"),
+    ("Top anchored", "camera",          "Camera stage",     "half-c",  "cam",   "I", "E"),
+    ("Top anchored", "half-right-top",  "Right half, top",  "half-r",  "upper", "O", "R"),
+    ("Top anchored", "third-right-top", "Right third, top", "third-r", "upper", "P", "T"),
+
+    ("Bottom anchored", "third-left-bottom",  "Left third, bottom",  "third-l", "lower", "N", "Z"),
+    ("Bottom anchored", "half-left-bottom",   "Left half, bottom",   "half-l",  "lower", "M", "X"),
+    ("Bottom anchored", "below-camera",       "Below camera",        "half-c",  "stage", ",", "C"),
+    ("Bottom anchored", "half-right-bottom",  "Right half, bottom",  "half-r",  "lower", ".", "V"),
+    ("Bottom anchored", "third-right-bottom", "Right third, bottom", "third-r", "lower", "/", "B"),
 ]
 
 # Palette slots (Moom's pop-up over the green button), left to right. These are
@@ -117,18 +138,20 @@ PALETTE_REGIONS = ["third-left", "half-left", "half-centre", "half-right", "thir
 def regions():
     """The region table as dictionaries, validated against the bands."""
     seen_keys, seen_titles, out = {}, set(), []
-    for group, region_id, title, columns, rows, key in REGIONS:
+    for group, region_id, title, columns, rows, key, mirror in REGIONS:
         if columns not in COLUMN_BANDS:
             raise ValueError(f"{region_id}: unknown column band {columns!r}")
         if rows not in ROW_BANDS:
             raise ValueError(f"{region_id}: unknown row band {rows!r}")
-        if key not in KEYS:
-            raise ValueError(f"{region_id}: unknown key {key!r}")
-        if key in seen_keys:
-            raise ValueError(f"{region_id}: key {key!r} already used by {seen_keys[key]}")
         if title in seen_titles:
             raise ValueError(f"{region_id}: title {title!r} is not unique")
-        seen_keys[key] = region_id
+        for label in (key, mirror):
+            if label not in KEYS:
+                raise ValueError(f"{region_id}: unknown key {label!r}")
+            if label in seen_keys:
+                raise ValueError(f"{region_id}: key {label!r} already used "
+                                 f"by {seen_keys[label]}")
+            seen_keys[label] = region_id
         seen_titles.add(title)
         out.append({
             "group": group,
@@ -138,7 +161,8 @@ def regions():
             "rows": ROW_BANDS[rows],
             "column_band": columns,
             "row_band": rows,
-            "key": key,
+            "key": key,        # carries the Moom hotkey
+            "mirror": mirror,  # sends the same chord from the other hand
         })
     return out
 

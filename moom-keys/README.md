@@ -127,19 +127,33 @@ is ever off-grid and the set can be reasoned about rather than remembered:
 Vertical thirds became 30/70. A 10-row grid cannot express 33/67, and 72px on
 a 2160px screen is not worth carrying an off-grid frame forever.
 
-**The keyboard is a map of the screen.** Held Caps Lock selects a window
-layer (tapped, it is still Escape); on that layer the right hand *is* the
-monitor — row chooses the vertical anchor, column chooses the horizontal
-position. `K` is the centred half, `I` the camera stage above it, `,` the
-working window below it.
+**The keyboard is a map of the screen, under either hand.** On the window
+layer the alpha block *is* the monitor — row chooses the vertical anchor,
+column chooses the horizontal position — and the same map is mirrored on both
+hands so it can be driven one-handed while the other hand is on the mouse.
+`K`/`D` is the centred half, `I`/`E` the camera stage above it, `,`/`C` the
+working window below it. Mirrored keys send the same chord, so Moom sees one
+action either way and the mirror costs nothing.
+
+The layer key has to be reachable by the hand that is *not* pressing a region
+key, which for the left-hand block means the thumb: `LM(<layer>, MOD_LALT)` on
+left Option holds the layer with Option active, and since the chord already
+contains Option that changes nothing, while every unmapped key stays
+transparent so ⌥←, ⌥⌫ and ⌥-click keep working. Caps Lock as
+`LT(<layer>, KC_ESC)` is the same layer under the left pinky for when the
+right hand is doing the pressing, and tapped it is still Escape.
 
 **Two bindings per region, because Moom allows one hotkey per action.** Each
 region generates a pair: a controller-restricted single key, which keeps the
-⌥` overlay working as the cheat sheet, and the same key under Hyper
-(⌃⌥⇧⌘) for one-keystroke invocation from the window layer. QMK emits Hyper
+⌥` overlay working as the cheat sheet, and the same key under a global chord
+for one-keystroke invocation from the window layer. QMK emits the chord
 natively as `HYPR(KC_K)` — no macro, no inter-stroke delay, nothing to leak
 into the focused app if Moom is slow. Titles make every region AppleScript-
 addressable for composite layouts later.
+
+Alfred owns ⌃⌥⇧⌘Space, so full screen sits on `'` / `` ` `` instead. If
+anything else turns out to hold a Hyper chord, `--chord meh` regenerates the
+whole set on ⌃⌥⇧ (no Command) rather than picking at individual keys.
 
 ## Files
 
@@ -162,7 +176,7 @@ open -a Moom
 Generated actions carry deterministic identifiers derived from their region
 id, so regenerating updates them in place instead of piling up duplicates.
 Saved layouts are carried across; the hand-drawn move & zoom actions are
-replaced. `--keep-existing` keeps them instead, `--no-hyper-keys` and
+replaced. `--keep-existing` keeps them instead, `--no-chord-keys` and
 `--no-controller-keys` drop either half of each pair.
 
 Two things to verify on first import, both one-line fixes if wrong:
@@ -177,8 +191,9 @@ Two things to verify on first import, both one-line fixes if wrong:
 
 ## Next
 
-The Keychron side: a patch for an exported Launcher keymap that writes
-`HYPR(...)` onto the window layer and `LT(<layer>, KC_ESC)` onto Caps Lock.
-The Max series exposes four layers (macOS base and Fn, Windows base and Fn),
-so the window layer has to reuse one — layer 3, the Windows Fn layer, is the
-least costly if the Mac/Win switch never leaves Mac.
+The Keychron side: a patch for an exported Launcher keymap that writes the
+chord keycodes onto both hands of the window layer, `LM(<layer>, MOD_LALT)`
+onto left Option and `LT(<layer>, KC_ESC)` onto Caps Lock. The Max series
+exposes four layers (macOS base and Fn, Windows base and Fn), so the window
+layer has to reuse one — layer 3, the Windows Fn layer, is the least costly
+if the Mac/Win switch never leaves Mac.
