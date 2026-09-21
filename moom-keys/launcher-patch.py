@@ -1,129 +1,144 @@
 #!/usr/bin/env python3
-"""Write the window layer into an exported Keychron Launcher / VIA keymap.
+"""Write the window layer into an exported Keychron Launcher keymap.
 
-Launcher's "Save Current Layout" produces a JSON file holding one flat list of
-keycodes per layer. The lists are in the keyboard's own key order, which we do
-not need to know: a key is located by what it types on the base layer, so
-`KC_D` on layer 0 and the region key on the window layer are the same physical
-key by construction.
+Launcher stores one raw keycode per (row, column) per layer, so a key is
+located by what it types on the base layer rather than by matrix position:
+`D` on layer 0 and the region key on the window layer are the same physical
+key by construction, whatever the layout.
 
-    ./launcher-patch.py k3max.json --layer 3 -o k3max-windows.json
+    ./launcher-inspect.py Keymap-K3_Max_RGB.json     # which layers are free?
+    ./launcher-patch.py Keymap-K3_Max_RGB.json --layer 3 -o Keymap-windows.json
 
-Writes each region's chord onto both hands of the window layer, `LM(layer,
-MOD_LALT)` onto left Option and `LT(layer, KC_ESC)` onto Caps Lock, and leaves
-every other key on the layer transparent so it still types normally.
+Places every region's chord on both hands of the window layer, `LM(layer,
+MOD_LALT)` on left Option and `LT(layer, KC_ESC)` on Caps Lock, and leaves the
+rest of the layer transparent so unmapped keys still type normally. The
+keymap's checksum is recomputed, so Launcher accepts the file back.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import qmk  # noqa: E402
 import regions as spec  # noqa: E402
 
-TRANSPARENT = "KC_TRNS"
-# Launcher and VIA both use KC_LALT for left Option on Mac layouts, but
-# Keychron's own exports have been seen with the Mac-flavoured alias.
-LEFT_OPTION = ("KC_LALT", "KC_LOPT")
-CAPS_LOCK = ("KC_CAPS", "KC_CAPS_LOCK")
+CHORDS = {"HYPR": qmk.HYPER_MODS, "MEH": qmk.MEH_MODS}
+# Left Option is KC_LALT on the Windows layers and Keychron's own Mac
+# modifier on the macOS ones.
+LEFT_OPTION = (226, qmk.KEYCHRON_LEFT_OPTION)
 
 
-def load(path):
-    with open(path) as handle:
-        keymap = json.load(handle)
-    if "layers" not in keymap:
-        raise SystemExit(f"{path}: no 'layers' key — is this a Launcher export?")
-    return keymap
+def checksum(keymap):
+    return hashlib.md5(json.dumps(keymap, separators=(",", ":")).encode()).hexdigest()
 
 
-def find(layer, candidates, what, warnings):
-    """Index of the first key on the base layer typing one of `candidates`."""
-    matches = [index for index, code in enumerate(layer) if code in candidates]
+def positions(layer):
+    """Keycode -> [(row, column)] for everything on a layer."""
+    found = {}
+    for entry in layer:
+        found.setdefault(entry["val"], []).append((entry["row"], entry["col"]))
+    return found
+
+
+def locate(found, candidates, what, warnings):
+    """The one position typing any of `candidates` on the base layer."""
+    matches = [place for value in candidates for place in found.get(value, [])]
     if not matches:
-        warnings.append(f"no key found for {what} ({', '.join(candidates)})")
+        warnings.append(f"no key found for {what}")
         return None
     if len(matches) > 1:
         warnings.append(f"{what} matched {len(matches)} keys, using the first")
     return matches[0]
 
 
-def patch(keymap, layer_index, base_index, chord, blank, caps, left_option):
-    base = keymap["layers"][base_index]
-    while len(keymap["layers"]) <= layer_index:
-        keymap["layers"].append([TRANSPARENT] * len(base))
+def write(layer, place, value):
+    for entry in layer:
+        if (entry["row"], entry["col"]) == place:
+            entry["val"] = value
+            return True
+    return False
 
-    window = keymap["layers"][layer_index]
-    if len(window) != len(base):
-        raise SystemExit("layer lengths differ — export looks inconsistent")
-    if blank:
-        window = [TRANSPARENT] * len(base)
 
+def patch(export, layer_index, base_index, mods, blank, caps, left_option):
+    layers = export["keymap"]
+    if not 0 <= layer_index < len(layers):
+        raise SystemExit(f"no layer {layer_index}: this keyboard has {len(layers)}")
+    if layer_index == base_index:
+        raise SystemExit("the window layer cannot be the base layer")
+
+    base, window = layers[base_index], layers[layer_index]
+    found = positions(base)
     warnings, placed = [], 0
+
+    if blank:
+        for entry in window:
+            entry["val"] = qmk.TRANSPARENT
+
     for region in spec.regions():
-        _, keycode = spec.KEYS[region["key"]]
+        keycode = qmk.CODES[spec.KEYS[region["key"]][1]]
         for label in (region["key"], region["mirror"]):
-            _, target = spec.KEYS[label]
-            index = find(base, {target}, f"{region['title']} ({label})", warnings)
-            if index is not None:
-                window[index] = f"{chord}({keycode})"
+            target = qmk.CODES[spec.KEYS[label][1]]
+            place = locate(found, [target], f"{region['title']} ({label})", warnings)
+            if place and write(window, place, qmk.chord(mods, keycode)):
                 placed += 1
 
-    keymap["layers"][layer_index] = window
-
     if caps:
-        index = find(base, set(CAPS_LOCK), "Caps Lock", warnings)
-        if index is not None:
-            base[index] = f"LT({layer_index},KC_ESC)"
+        place = locate(found, [qmk.CODES["KC_CAPS"]], "Caps Lock", warnings)
+        if place:
+            write(base, place, qmk.layer_tap(layer_index, qmk.CODES["KC_ESC"]))
     if left_option:
-        index = find(base, set(LEFT_OPTION), "left Option", warnings)
-        if index is not None:
-            base[index] = f"LM({layer_index},MOD_LALT)"
+        place = locate(found, LEFT_OPTION, "left Option", warnings)
+        if place:
+            write(base, place, qmk.layer_mod(layer_index, qmk.MOD_LALT))
 
+    export["MD5"] = checksum(layers)
     return placed, warnings
 
 
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("keymap", help="exported Launcher / VIA layout JSON")
+    parser.add_argument("keymap", help="exported Launcher keymap JSON")
     parser.add_argument("-o", "--output", required=True, help="JSON to write")
     parser.add_argument("--layer", type=int, default=3,
                         help="layer to write the window map into (default: 3)")
     parser.add_argument("--base-layer", type=int, default=0,
                         help="layer the physical keys are identified from (default: 0)")
-    parser.add_argument("--chord", default="HYPR", choices=["HYPR", "MEH"],
-                        help="QMK chord wrapper, matching moom-gen.py (default: HYPR)")
+    parser.add_argument("--chord", default="HYPR", choices=sorted(CHORDS),
+                        help="chord wrapper, matching moom-gen.py (default: HYPR)")
     parser.add_argument("--keep-layer", action="store_true",
                         help="keep whatever is already on the window layer")
-    parser.add_argument("--no-caps", action="store_true",
-                        help="leave Caps Lock alone")
+    parser.add_argument("--no-caps", action="store_true", help="leave Caps Lock alone")
     parser.add_argument("--no-left-option", action="store_true",
                         help="leave left Option alone")
     args = parser.parse_args()
 
-    keymap = load(args.keymap)
-    if args.base_layer >= len(keymap["layers"]):
-        raise SystemExit(f"no layer {args.base_layer} in this export")
+    with open(args.keymap) as handle:
+        export = json.load(handle)
+    if "keymap" not in export:
+        raise SystemExit(f"{args.keymap}: no 'keymap' — is this a Launcher export?")
 
     placed, warnings = patch(
-        keymap,
+        export,
         layer_index=args.layer,
         base_index=args.base_layer,
-        chord=args.chord,
+        mods=CHORDS[args.chord],
         blank=not args.keep_layer,
         caps=not args.no_caps,
         left_option=not args.no_left_option,
     )
 
-    Path(args.output).write_text(json.dumps(keymap, indent=2))
+    Path(args.output).write_text(json.dumps(export, separators=(",", ":")))
     print(f"placed {placed} keys on layer {args.layer}, wrote {args.output}")
     for warning in warnings:
         print(f"  warning: {warning}")
-    print("\nLoad it back with Launcher's \"Load Saved Layout\", wired over USB.")
+    print("\nLoad it back with Launcher's \"Import Keymap\", wired over USB.")
     return 0
 
 

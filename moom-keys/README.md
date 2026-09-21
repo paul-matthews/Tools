@@ -159,8 +159,10 @@ whole set on ⌃⌥⇧ (no Command) rather than picking at individual keys.
 
 * `regions.py` — the region table. The only file to edit by hand.
 * `moom-gen.py` — generate Moom actions, the palette and a cheat sheet from it.
-* `launcher-patch.py` — write the window layer into an exported Keychron
-  Launcher keymap.
+* `launcher-inspect.py` — decode a Keychron Launcher export: every layer, and
+  which layers are reachable from which.
+* `launcher-patch.py` — write the window layer into a Launcher export.
+* `qmk.py` — the QMK keycode numbers and encodings both of those need.
 * `moom-inspect.py` — decode an exported plist: grid, hotkeys, every action as
   grid cells and an ASCII map, flagging duplicates and off-grid frames.
 * `CHEATSHEET.md` — generated; the printable reference.
@@ -191,20 +193,45 @@ Two things to verify on first import, both one-line fixes if wrong:
   inside the ⌥` overlay; if one is claimed by Moom's built-in controls,
   change that region's key in `regions.py`.
 
-The keyboard side takes the Launcher export and gives it back patched:
+## Launcher notes (for the patcher)
 
-```sh
-./launcher-patch.py k3max.json --layer 3 -o k3max-windows.json
-```
+Launcher's export is not VIA's. It is `{"id", "keymap", "version", "MD5"}`,
+where `keymap` is one array per layer of `{"col", "row", "val"}` objects —
+98 per layer on a K3 Max — and `val` is a raw numeric QMK keycode. So both
+reading and writing it means knowing the quantum ranges:
+
+* basic keycodes are HID usage IDs: `KC_A` is 4, `KC_ESC` 41, `KC_CAPS` 57;
+* `0x0100`–`0x1FFF` is a basic keycode with modifiers, `mods << 8 | keycode`,
+  so `HYPR(KC_K)` is `0x0F00 | 40` = 3854;
+* `LT(layer, kc)` is `0x4000 | layer << 8 | kc`, `LM(layer, mod)` is
+  `0x5000 | layer << 5 | mod`, `MO(layer)` is `0x5220 | layer`;
+* `0x7800`+ is lighting, `0x7E00`+ is Keychron's own — including the Mac
+  modifiers, where left Option is `KB0` rather than `KC_LALT`.
+
+**`MD5` is over the `keymap` array serialised as compact JSON**
+(`json.dumps(keymap, separators=(",", ":"))`), so a patched file has to be
+re-signed or Launcher will reject it.
+
+The K3 Max has four layers and the Mac/Win switch chooses the base: 0 and 1
+are macOS base and Fn, 2 and 3 Windows base and Fn. Layer 3 is reachable only
+via `MO(3)` on layer 2, so on macOS it is free — which is why the window layer
+goes there. The cost is that flipping the switch to Windows turns Fn into the
+window layer.
 
 Keys are located by what they type on the base layer rather than by matrix
 position, so the patch needs no keyboard definition and does not care about
-ANSI or ISO. The Max series exposes four layers (macOS base and Fn, Windows
-base and Fn), so the window layer has to reuse one — layer 3, the Windows Fn
-layer, is the least costly if the Mac/Win switch never leaves Mac.
+ANSI or ISO:
+
+```sh
+./launcher-inspect.py Keymap-K3_Max_RGB.json          # which layers are free?
+./launcher-patch.py Keymap-K3_Max_RGB.json --layer 3 -o Keymap-windows.json
+./launcher-inspect.py Keymap-windows.json --layer 3   # read it back
+```
+
+Then import the result in Launcher over USB.
 
 ## Next
 
-Confirm against a real Launcher export: which layers are already spoken for,
-and whether Launcher accepts `LM(3,MOD_LALT)` and `HYPR(...)` in its custom
-keycode field. Then the AppleScript layer for composite window arrangements.
+Confirm on hardware that Launcher imports a re-signed file and that
+`LM(3, MOD_LALT)` behaves — Option held, layer active, unmapped keys still
+typing. Then the AppleScript layer for composite window arrangements.
