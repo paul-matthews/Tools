@@ -126,7 +126,10 @@ pair, `--chord meh` moves every chord to ⌃⌥⇧ if something claims a Hyper o
 
 ## Files
 
-* `regions.py` — the region table. The only file to edit by hand.
+* `regions.py` — the region table. Edit by hand.
+* `actions.py` — the actions table: apps to focus, modes to enter. Edit by hand.
+* `actions-gen.py` — generate the AppleScripts and cheat sheet for the actions
+  layer.
 * `moom-gen.py` — generate Moom actions, the palette and a cheat sheet.
 * `moom-inspect.py` — decode an exported plist: grid, hotkeys, every action
   as grid cells and an ASCII map, flagging duplicates and off-grid frames.
@@ -134,8 +137,38 @@ pair, `--chord meh` moves every chord to ⌃⌥⇧ if something claims a Hyper o
 * `launcher-inspect.py` — decode a Launcher export: every layer, and which
   layers are reachable from which.
 * `qmk.py` — the QMK keycode numbers and encodings both Launcher tools need.
-* `CHEATSHEET.md` — generated; the printable reference.
+* `CHEATSHEET.md`, `ACTIONS.md` — generated; the printable references.
 * `INSTALL.md` — the runbook, with verification and rollback.
+
+## The actions layer
+
+A second layer, held by **Tab** (tapped, it is still Tab), on layer 2 — the
+Windows base, which is the last layer Launcher offers. Where the window layer
+is spatial, this one is mnemonic: `C` focuses Chrome, `T` iTerm2, `O` Obsidian.
+Position carries no meaning, so there is no mirror and one key per action.
+
+It uses **Meh** chords (⌃⌥⇧) because the window layer has already claimed
+Hyper on most letters. Alfred listens for them and runs a generated
+AppleScript:
+
+```sh
+./actions-gen.py -o ~/bin/moom-keys -c ACTIONS.md
+./launcher-patch.py ~/Downloads/Keymap-K3_Max_RGB.json \
+    --layer 3 --actions-layer 2 -o ~/Downloads/Keymap-windows.json
+```
+
+Each script needs one Alfred hotkey, bound once. Every script also runs
+standalone from Script Editor, so an action can be proven before any hotkey
+exists.
+
+Apps are addressed by **bundle identifier**, not name: it survives renames,
+and it is the only way to reach a Chrome PWA, which is a real application
+bundle rather than a window of Chrome. Calendar and Chat are both PWAs.
+
+Modes compose steps — `place` an app in a region by title, `layout` to run a
+saved Moom layout, `shortcut` to run something from Shortcuts.app, `url` to
+open a link. Saved layouts are the right choice when a mode has to place
+several windows of one app; `place` steps only reach the frontmost window.
 
 ## The design
 

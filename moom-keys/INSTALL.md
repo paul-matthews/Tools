@@ -67,7 +67,32 @@ rebinds Caps Lock and left Option on layer 0, which is the macOS base layer.
 The keymap lives in the keyboard, so it works over Bluetooth and 2.4GHz
 afterwards; the cable is only needed for programming.
 
-## Part 3 — verifying
+## Part 3 — the actions layer (optional)
+
+Independent of the window layer, and safe to leave until later.
+
+```sh
+./actions-gen.py -o ~/bin/moom-keys -c ACTIONS.md
+```
+
+Run one of the generated scripts from Script Editor to prove it does what you
+want. Then bind each to its Meh chord in Alfred: a **Hotkey** trigger
+connected to a **Run Script** action calling `/usr/bin/osascript` with the
+script's path. Powerpack required.
+
+Add `--actions-layer 2` when patching the keymap to put the chords on the
+keyboard, held by Tab:
+
+```sh
+./launcher-patch.py ~/Downloads/Keymap-K3_Max_RGB.json \
+    --layer 3 --actions-layer 2 -o ~/Downloads/Keymap-windows.json
+```
+
+This spends layer 2, the Windows base. Nothing on macOS reaches it, but
+flipping the Mac/Win switch afterwards lands on the actions layer rather than
+a Windows keymap.
+
+## Part 4 — verifying
 
 Four checks, in this order. They fail differently, and which one fails says
 what to fix.

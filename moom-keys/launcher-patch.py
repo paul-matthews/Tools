@@ -25,6 +25,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import actions as action_spec  # noqa: E402
 import qmk  # noqa: E402
 import regions as spec  # noqa: E402
 
@@ -65,6 +66,30 @@ def write(layer, place, value):
     return False
 
 
+def patch_actions(export, layer_index, base_index, blank, warnings):
+    """Write the actions layer: one Meh chord per action, Tab holds the layer."""
+    base, layer = export["keymap"][base_index], export["keymap"][layer_index]
+    found = positions(base)
+    if blank:
+        for entry in layer:
+            entry["val"] = qmk.TRANSPARENT
+
+    placed = 0
+    for action in action_spec.actions():
+        keycode = qmk.CODES.get(f'KC_{action["key"]}')
+        if keycode is None:
+            warnings.append(f'{action["name"]}: no keycode for {action["key"]!r}')
+            continue
+        place = locate(found, [keycode], f'{action["name"]} ({action["key"]})', warnings)
+        if place and write(layer, place, qmk.chord(qmk.MEH_MODS, keycode)):
+            placed += 1
+
+    place = locate(found, [qmk.CODES["KC_TAB"]], "Tab", warnings)
+    if place:
+        write(base, place, qmk.layer_tap(layer_index, qmk.CODES["KC_TAB"]))
+    return placed
+
+
 def patch(export, layer_index, base_index, mods, blank, caps, left_option):
     layers = export["keymap"]
     if not 0 <= layer_index < len(layers):
@@ -97,7 +122,6 @@ def patch(export, layer_index, base_index, mods, blank, caps, left_option):
         if place:
             write(base, place, qmk.layer_mod(layer_index, qmk.MOD_LALT))
 
-    export["MD5"] = checksum(layers)
     return placed, warnings
 
 
@@ -117,6 +141,9 @@ def main():
     parser.add_argument("--no-caps", action="store_true", help="leave Caps Lock alone")
     parser.add_argument("--no-left-option", action="store_true",
                         help="leave left Option alone")
+    parser.add_argument("--actions-layer", type=int,
+                        help="also write the actions layer (from actions.py) here, "
+                             "held by Tab")
     args = parser.parse_args()
 
     with open(args.keymap) as handle:
@@ -134,8 +161,16 @@ def main():
         left_option=not args.no_left_option,
     )
 
+    if args.actions_layer is not None:
+        if args.actions_layer in (args.layer, args.base_layer):
+            raise SystemExit("the actions layer must be its own layer")
+        count = patch_actions(export, args.actions_layer, args.base_layer,
+                              blank=not args.keep_layer, warnings=warnings)
+        print(f"placed {count} keys on layer {args.actions_layer} (actions)")
+
+    export["MD5"] = checksum(export["keymap"])
     Path(args.output).write_text(json.dumps(export, separators=(",", ":")))
-    print(f"placed {placed} keys on layer {args.layer}, wrote {args.output}")
+    print(f"placed {placed} keys on layer {args.layer} (windows), wrote {args.output}")
     for warning in warnings:
         print(f"  warning: {warning}")
     print("\nLoad it back with Launcher's \"Import Keymap\", wired over USB.")
