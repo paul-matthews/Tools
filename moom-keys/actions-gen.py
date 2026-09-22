@@ -107,8 +107,10 @@ def main():
     parser.add_argument("-c", "--cheatsheet", help="also write a markdown cheat sheet")
     args = parser.parse_args()
 
+    _config, parser = spec.read()
     items = spec.actions()
     titles = {region["title"] for region in region_spec.regions()}
+    print(f"read {spec.CONFIG.name} with {parser}\n")
 
     out = Path(args.output).expanduser()
     out.mkdir(parents=True, exist_ok=True)
@@ -136,4 +138,7 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except BrokenPipeError:  # piping into head and friends
+        sys.exit(0)

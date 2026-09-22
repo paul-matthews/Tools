@@ -129,7 +129,8 @@ pair, `--chord meh` moves every chord to ⌃⌥⇧ if something claims a Hyper o
 * `regions.py` — the region table. Edit by hand.
 * `actions.yaml` — the actions table: apps to focus, modes to enter. Edit by
   hand; no YAML library needed to read it.
-* `actions.py`, `miniyaml.py` — load and validate that file.
+* `actions.py` — load and validate that file, with PyYAML or without it.
+* `miniyaml.py` — the fallback parser, for machines with no YAML library.
 * `actions-gen.py` — generate the AppleScripts and cheat sheet for the actions
   layer.
 * `moom-gen.py` — generate Moom actions, the palette and a cheat sheet.
@@ -206,10 +207,16 @@ against the list above, so a typo fails with the line rather than producing a
 script that quietly does nothing. Scripts for actions you have removed are
 deleted on regeneration, so nothing stale stays bound in Alfred.
 
-YAML is read by `miniyaml.py`, a parser for the subset these files use —
-macOS ships no YAML library, and this is meant to work without installing
-anything. Every scalar is a string; anything fancier raises an error naming
-the line.
+The file is read by **PyYAML if it is installed**, and by `miniyaml.py` — a
+parser for the subset these files use — if it is not, because macOS ships a
+Python without it and a corporate machine may not be one you can `pip
+install` on. The generator prints which parser ran.
+
+Two things keep the paths honest. Scalars are normalised to strings, so
+PyYAML reading `key: 1` as an integer and `no` as a boolean cannot change
+what the file means. And when PyYAML is present the fallback parser is run
+too: if it disagrees, or cannot read the file at all, the generator says so
+rather than letting the difference surface on the machine that lacks PyYAML.
 
 ## The design
 
