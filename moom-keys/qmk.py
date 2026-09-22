@@ -56,6 +56,7 @@ CODES.update({
     # Keychron's Mac-flavoured modifiers, which stand in for the standard ones
     # on the macOS layers: left Option is KB0, not KC_LALT.
     "KC_LOPTN": KEYBOARD + 0, "KC_LCMMD": KEYBOARD + 2,
+    "KC_RCMMD": KEYBOARD + 3,
 })
 
 TRANSPARENT = 1

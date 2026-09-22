@@ -72,11 +72,13 @@ lives in the keyboard, so it keeps working over Bluetooth and 2.4GHz.
 
 ```sh
 ./actions-gen.py -c ACTIONS.md
-osascript scripts/mode-meeting.applescript
+osascript scripts/mode-meeting.applescript          # runs it, here and now
+./alfred-gen.py -o ~/Desktop/moom-keys.alfredworkflow
 ```
 
-The second line runs a mode there and then. Then bind each script to its chord
-in Alfred, once.
+Double-click the workflow to install it: one hotkey per action, each wired to
+run its script from this checkout. Editing `config.yaml` and regenerating then
+changes what the hotkeys do without touching Alfred again.
 
 [`INSTALL.md`](INSTALL.md) has all of this at walking pace, with a
 verification ladder whose failures each point at what to fix, and rollback for
@@ -105,7 +107,7 @@ window below it. The digit row is one width slid across the screen —
 `2` `3` `4` are the left, centre and right two-thirds — flanked by the two
 narrow sides on `1` and `5`.
 
-Holding **Tab** gives the actions layer instead: `C` for Chrome, `T` for
+Holding **right Command** gives the actions layer instead: `C` for Chrome, `T` for
 iTerm2, `1` for meeting mode. `ACTIONS.md` lists them.
 
 ## Changing anything
@@ -148,6 +150,7 @@ used twice (Moom addresses actions by title, so they must be unique).
 * `moom-gen.py` / `moom-inspect.py` — write and read Moom's preferences.
 * `launcher-patch.py` / `launcher-inspect.py` — write and read the keymap.
 * `actions-gen.py` — write the AppleScripts and `ACTIONS.md`.
+* `alfred-gen.py` — build an Alfred workflow binding every chord to its script.
 * `scripts/` — generated AppleScripts, committed so they travel with the repo.
 * `CHEATSHEET.md`, `ACTIONS.md` — generated references.
 * `INSTALL.md` — the runbook, with verification and rollback.
@@ -166,8 +169,15 @@ thirds, and 72px on a 2160px screen is not worth an off-grid frame forever.
 nothing because mirrored keys send the same chord, so Moom sees one action
 either way.
 
-The layer key must be reachable by the hand that is *not* pressing a region
-key, which for the left-hand block means the thumb: `LM(3, MOD_LALT)` on left
+The actions layer is held by **right Command**, which gives up being Command.
+A tap-hold on Tab was the first choice and the wrong one: hold Tab a shade too
+long and QMK reads it as a hold, sending no Tab at all, so ⌘Tab silently fails
+to open the switcher. Tab is far too busy a key to gamble on a timing
+threshold; right Command is one almost nobody uses, with shortcuts typed on
+the left.
+
+The window layer key must be reachable by the hand that is *not* pressing a
+region key, which for the left-hand block means the thumb: `LM(3, MOD_LALT)` on left
 Option holds the layer with Option live, and since the chord already contains
 Option that changes nothing, while every unmapped key stays transparent so
 ⌥←, ⌥⌫ and ⌥-click keep working. Caps Lock as `LT(3, KC_ESC)` is the same

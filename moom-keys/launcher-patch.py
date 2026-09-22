@@ -71,6 +71,8 @@ def hold_keys(spec, base, found, index, warnings):
             continue
         if how["bind"] == "tap":
             write(base, place, qmk.layer_tap(index, qmk.CODES[how["tap"]]))
+        elif how["bind"] == "momentary":
+            write(base, place, qmk.momentary(index))
         else:
             write(base, place, qmk.layer_mod(index, getattr(qmk, how["mod"])))
 

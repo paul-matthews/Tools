@@ -1,147 +1,122 @@
 # Installing
 
-Two halves that have to agree: Moom learns the regions and their hotkeys, the
-keyboard learns which chord each key sends. Either half works without the
-other — Moom's ⌥` overlay drives the regions with no keyboard changes, and
-the keyboard's chords do nothing until Moom knows them — so they can be done
-in either order and verified separately.
-
-Everything below runs from this directory:
+One pass, start to finish. Each step has a check; if a check fails, the table
+at the end says what it means. Everything runs from this directory:
 
 ```sh
-git fetch origin claude/keychron-moom-window-strategy-k63ayg
-git checkout claude/keychron-moom-window-strategy-k63ayg
+git pull
 cd moom-keys
 ```
 
-No dependencies; the Python 3 that ships with macOS runs all of it. If a
-script will not execute directly, put `python3` in front of it.
+No dependencies — the Python that ships with macOS is enough.
 
-## Part 1 — Moom
-
-Moom holds its preferences in memory and writes them back when it quits, so
-it has to be quit before both the export and the import.
+## 1. Generate everything
 
 ```sh
 osascript -e 'quit app "Moom"'
-
-# Two exports: the rollback is written once and never touched again, the
-# working copy is re-exported every time you regenerate.
-defaults export com.manytricks.Moom ~/Desktop/Moom-rollback.plist
-defaults export com.manytricks.Moom ~/Desktop/Moom-current.plist
+defaults export com.manytricks.Moom ~/Desktop/Moom-rollback.plist   # keep, untouched
+defaults export com.manytricks.Moom ~/Desktop/Moom-current.plist    # working copy
 
 ./moom-gen.py ~/Desktop/Moom-current.plist -o ~/Desktop/Moom-new.plist -c CHEATSHEET.md
+./actions-gen.py -c ACTIONS.md
+./alfred-gen.py -o ~/Desktop/moom-keys.alfredworkflow
+./launcher-patch.py ~/Downloads/Keymap-K3_Max_RGB.json -o ~/Downloads/Keymap-new.json
+```
 
-# Optional: read back what was generated before committing to it.
-./moom-inspect.py ~/Desktop/Moom-new.plist --no-map | less
+Two Moom exports on purpose: the rollback is written once and never again,
+the working copy is re-exported every time. One file for both means the first
+regeneration overwrites what you meant to be able to return to.
 
+`moom-gen.py` reports what it preserved, saved layouts by name. Anything it
+did not write itself, it keeps.
+
+## 2. Load Moom
+
+```sh
 defaults import com.manytricks.Moom ~/Desktop/Moom-new.plist
 open -a Moom
 ```
 
-Expect 46 actions: 21 regions twice, plus four group headers.
+**Check:** **⌥`** then **D** moves the front window to the centred half.
 
-## Part 2 — the keyboard
+## 3. Load the keyboard
 
-Launcher only talks to the keyboard over USB, and only from a Chromium-based
-browser (WebHID). The Mac/Win switch must be on **Mac**, because the patch
-rebinds Caps Lock and left Option on layer 0, which is the macOS base layer.
+Plug the K3 Max in — Launcher only talks over USB, from a Chromium browser —
+with the Mac/Win switch on **Mac**. Open <https://launcher.keychron.com>,
+click **Authorize device**, then **Export** the current keymap and keep that
+file as your keyboard rollback. Now **Import** `~/Downloads/Keymap-new.json`.
 
-1. Plug the K3 Max in with its cable and open <https://launcher.keychron.com>.
-   Click **Authorize device** and pick the keyboard.
-2. **Export** the current keymap — even if you exported one before, work from
-   a fresh file so nothing configured since is lost. Keep it as the rollback.
-3. Patch it:
+**Check:** hold **Caps Lock**, press **D** — the same jump. Then tap Caps on
+its own: it should type Escape.
 
-   ```sh
-   ./launcher-inspect.py ~/Downloads/Keymap-K3_Max_RGB.json
-   ./launcher-patch.py ~/Downloads/Keymap-K3_Max_RGB.json -o ~/Downloads/Keymap-new.json
-   ./launcher-inspect.py ~/Downloads/Keymap-new.json --layer 0 --layer 2 --layer 3
-   ```
+This writes two layers. Layer 3 is windows, held by Caps Lock or left Option.
+Layer 2 is actions, held by **right Command**, which stops being Command —
+left Command still does every shortcut you type.
 
-   The first reports which layers are reachable from which. The third reads
-   the patched file back: 42 chords on layer 3 and 14 on layer 2, with
-   `LT(3,Esc)` on Caps, `LM(3,0x04)` on left Option and `LT(2,Tab)` on Tab.
-4. **Import** the patched file in Launcher and let it write to the keyboard.
-   The checksum is recomputed by the patcher, so Launcher accepts it.
+## 4. Record a layout
 
-The keymap lives in the keyboard, so it works over Bluetooth and 2.4GHz
-afterwards; the cable is only needed for programming.
+Layouts are the one thing that cannot be generated: Moom records them from
+windows you have arranged, which is also the only way to place two windows of
+the same app.
 
-## Part 3 — the actions layer (optional)
+Arrange the windows you want for a meeting, then Moom's menu bar icon →
+**Save Window Layout Snapshot**, and name it exactly `Meeting`.
 
-Independent of the window layer, and safe to leave until later.
+**Check:**
 
 ```sh
-./actions-gen.py -c ACTIONS.md
+osascript -e 'tell application "Moom" to run "Meeting"'
+```
+
+Move a window, run it again, and everything should snap back.
+
+## 5. Run a mode
+
+```sh
 osascript scripts/mode-meeting.applescript
 ```
 
-The second line runs the mode there and then — no editor, no hotkey, nothing
-to paste. If the windows land where you expect, the whole chain is proven:
-AppleScript reaching Moom, region titles resolving, bundle identifiers
-resolving, and the delay being long enough.
+This runs the `Meeting` layout and then brings Obsidian forward, which is
+what `config.yaml` says the mode does. macOS will ask for permission to
+control Moom and Obsidian the first time — allow each.
 
-Then bind each script to its Meh chord in Alfred: a **Hotkey** trigger
-connected to a **Run Script** action with **Language** set to `/bin/bash`,
-running `osascript "<path to the script>"`. `ACTIONS.md` lists the exact line
-for each. Powerpack required.
+**Check:** the windows arrange and Obsidian ends up focused.
 
-Not `/usr/bin/osascript` as the language: Alfred passes the box's contents to
-the interpreter, so it would read the path as AppleScript source and fail.
+## 6. Install the Alfred workflow
 
-The keymap patch in Part 2 already put these chords on layer 2, held by Tab —
-both layers are written in one pass. That spends layer 2, the Windows base:
-nothing on macOS reaches it, but flipping the Mac/Win switch afterwards lands
-on the actions layer rather than a Windows keymap.
+Double-click `~/Desktop/moom-keys.alfredworkflow`. Alfred will ask to install
+it and to approve the hotkeys.
 
-## Part 4 — verifying
+It contains one hotkey per action, each wired to run the matching script from
+this checkout. That means editing `config.yaml` and re-running
+`actions-gen.py` changes what the hotkeys do without touching Alfred again;
+only adding or moving a key needs the workflow rebuilt.
 
-Four checks, in this order. They fail differently, and which one fails says
-what to fix.
+**Check:** hold **right Command** and press **1** — the meeting layout runs.
+Then right Command and **C** — Chrome comes forward.
 
-| # | Do this | Expect | If it fails |
-| --- | --- | --- | --- |
-| 1 | **⌥`** then **D** | Window jumps to the centred half | Moom was running during the import — quit it and import again |
-| 2 | **⌃⌥⇧⌘D** by hand | Same jump | Regenerate with `--no-device-bits` and re-import |
-| 3 | Tap **Caps** | Escape | The keymap did not take; re-run `launcher-inspect.py` on the patched file |
-| 4 | Hold **Caps**, press **K** | Same jump (K sends D's chord) | As 3 — check layer 3 in the inspector output |
-| 5 | Hold **left Option**, press **D** | Same jump | `LM` did not take; as a fallback the Caps route still works |
-| 6 | **⌥←** in any text field | Jumps a word left | `LM` is not passing Option through; report it, the fallback is `MO(3)` |
-| 7 | Hold **left Option**, press **`** | Moom's overlay opens | `` ` `` got mapped on the layer; it must stay transparent |
-| 8 | Hold **Caps**, press **I** | Window goes to the **top** centre | Row bands are inverted — `frame()` flips them for Moom's bottom-left origin |
-| 9 | Hold **Caps**, press **,** | Window goes to the **bottom** centre | The chord is `⌃⌥⇧⌘C`, not `⌃⌥⇧⌘,` — re-patch the keymap and re-import the plist together |
-| 10 | Tap **Tab** | A tab character | Tab also holds the actions layer; a tap must still type |
-| 11 | Hold **Tab**, press **C** | Chrome comes forward | Only once Alfred is bound — until then the chord fires into nothing |
+If Alfred refuses the file, `ACTIONS.md` lists every hotkey with its exact
+command, for binding by hand. Tedious, but certain.
 
-Checks 1–2 are the Moom half, 3–9 the keyboard half. If 1 works and 2 does
-not, the modifier flags are wrong and nothing on the keyboard will fire; fix
-that before touching the keymap.
+## When a check fails
 
-The overlay in check 1 takes the **chord key** — the left-hand letter — and
-only for regions marked `overlay: true` in the config, which is Left third,
-Centre half and Right third. The keyboard checks press whichever physical key
-you like, since both keys of a pair send the same chord. `CHEATSHEET.md`
-lists all three columns.
-
-## Saved layouts
-
-Moom's own saved layouts (arrange windows, then save) survive every
-regeneration: `moom-gen.py` records the identifiers it writes and replaces
-only those, keeping everything else. But it can only keep what is in the file
-you hand it, so **export fresh before regenerating**. Every run says what it
-kept, layouts by name, and `moom-inspect.py` reports them at the top of its
-output — so a missing layout shows up immediately rather than the next time
-you need it.
-
-They are worth having alongside the generated regions: a layout can place
-several windows of the same app, which a scripted sequence of region moves
-cannot. What they cannot do is survive a change of display — a snapshot stores
-absolute pixel frames and the screen set it was recorded on.
+| Check | Means |
+| --- | --- |
+| ⌥` then `D` does nothing | Moom was running during the import. Quit it and import again. |
+| ⌃⌥⇧⌘`D` typed by hand does nothing | The modifier flags are wrong. Regenerate with `--no-device-bits` and reimport. |
+| Caps types nothing, or types Caps | The keymap did not take. Re-run `launcher-inspect.py` on the patched file and check layer 0 shows `LT(3,Esc)`. |
+| Caps + `D` does nothing but ⌥` + `D` works | Layer 3 is wrong or missing — check the inspector's layer 3. |
+| left Option + `D` does nothing | `LM` did not take. The Caps route still works meanwhile. |
+| ⌥← stops jumping a word | `LM` is not passing Option through. Tell me — the fallback is a plain `MO(3)`. |
+| left Option + `` ` `` does not open Moom's overlay | `` ` `` got mapped on the layer; it must stay transparent. |
+| Caps + `I` puts the window at the bottom | Row bands are inverted; `frame()` flips them for Moom's bottom-left origin. |
+| `run "Meeting"` errors | The layout is not saved under exactly that name, or Moom's AppleScript support is off. |
+| right Command + `1` does nothing | The workflow is not installed, or its hotkeys were not approved. Check Alfred → Workflows. |
+| right Command still types Command | The keymap did not take — layer 0 column 10 should read `MO(2)`. |
 
 ## Rolling back
 
-Each half independently:
+Moom:
 
 ```sh
 osascript -e 'quit app "Moom"'
@@ -149,5 +124,5 @@ defaults import com.manytricks.Moom ~/Desktop/Moom-rollback.plist
 open -a Moom
 ```
 
-For the keyboard, import the export from step 2 in Launcher. Launcher's own
-factory reset also works, at the cost of anything else configured.
+The keyboard: import the export you kept in step 3. Alfred: delete the
+workflow from Alfred → Workflows.

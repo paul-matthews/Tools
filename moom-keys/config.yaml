@@ -51,12 +51,13 @@ keyboard:
     layer: 3
     chord: hyper          # ⌃⌥⇧⌘
     held_by: [caps, left-option]
-  # Apps and modes. Held by Tab (tap for Tab). Meh rather than Hyper because
-  # the window layer has claimed Hyper on most letters.
+  # Apps and modes. Held by right Command, which gives up being Command:
+  # a tap-hold on Tab would swallow ⌘Tab whenever the press ran long, and Tab
+  # is far too busy a key to gamble on a timing threshold.
   actions_layer:
     layer: 2
     chord: meh            # ⌃⌥⇧
-    held_by: [tab]
+    held_by: [right-command]
 
 # Regions. `chord` is the key Moom binds — always a letter or a digit, never
 # punctuation, which is where macOS keeps its own shortcuts. `keys` are the

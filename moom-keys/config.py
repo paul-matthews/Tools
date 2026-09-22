@@ -58,6 +58,9 @@ HELD_BY = {
     # Two candidates: the macOS layers carry Keychron's own Option keycode.
     "left-option": {"find": ["KC_LALT", "KC_LOPTN"], "bind": "mod",
                     "mod": "MOD_LALT"},
+    # A plain momentary layer: the key stops doing what it did. Right Command
+    # is the cheapest key to spend, since shortcuts are typed with the left.
+    "right-command": {"find": ["KC_RGUI", "KC_RCMMD"], "bind": "momentary"},
 }
 
 
