@@ -51,7 +51,7 @@ def applescript(action):
     return lines
 
 
-def cheat_sheet(cfg, glyphs):
+def cheat_sheet(cfg, glyphs, out):
     lines = [
         "# Actions", "",
         "Generated from `config.yaml`. Hold **Tab** for the actions layer, then "
@@ -64,12 +64,36 @@ def cheat_sheet(cfg, glyphs):
                 else f'{action["name"]} — {len(action["steps"])} steps')
         lines.append(f'| `{action["key"]}` | {glyphs}`{action["key"]}` | {what} |')
 
-    lines += ["", "## Binding them in Alfred", "",
-              "Each script needs one Alfred hotkey, once. In a workflow, add a "
-              "**Hotkey** trigger, record the chord, and connect it to a "
-              "**Run Script** action set to `/usr/bin/osascript` with the "
-              "script's path in this checkout. Powerpack required.", "",
-              "## Modes", ""]
+    lines += [
+        "", "## Binding them in Alfred", "",
+        "Each chord needs one Alfred hotkey, bound once. Powerpack required.",
+        "",
+        "1. Alfred Preferences → **Workflows** → **+** → **Blank Workflow**. "
+        "Name it something like `moom-keys`.",
+        "2. Right-click the canvas → **Inputs** → **Hotkey**. Record the chord.",
+        "3. Right-click → **Actions** → **Run Script**. Set **Language** to "
+        "`/bin/bash` and paste the line for that action from below.",
+        "4. Drag from the hotkey's right edge to the script action to connect "
+        "them.",
+        "",
+        "**Language must be `/bin/bash`, not `/usr/bin/osascript`.** Alfred's "
+        "Run Script passes the box's *contents* to the interpreter, so "
+        "osascript would read the path as AppleScript source and fail. Bash "
+        "runs the file, which keeps this checkout the only copy.",
+        "",
+        "The paths below are this checkout's, as it stands on the machine that "
+        "last ran `actions-gen.py` — run it yourself and they will be yours.",
+        "",
+        "```sh",
+    ]
+    commands = []
+    for action in cfg.actions:
+        name = action["name"].lower().replace(" ", "-")
+        commands.append((f'osascript "{out}/{action["kind"]}-{name}.applescript"',
+                         f'{glyphs}{action["key"]}  {action["name"]}'))
+    width = max(len(command) for command, _ in commands)
+    lines += [f"{command.ljust(width)}  # {note}" for command, note in commands]
+    lines += ["```", "", "## Modes", ""]
     for action in cfg.modes:
         lines += [f'### {action["name"]} (`{action["key"]}`)', ""]
         for step in action["steps"]:
@@ -113,7 +137,7 @@ def main():
 
     if args.cheatsheet:
         glyphs = GLYPHS[cfg.layer("actions_layer").get("chord", "meh")]
-        Path(args.cheatsheet).write_text(cheat_sheet(cfg, glyphs))
+        Path(args.cheatsheet).write_text(cheat_sheet(cfg, glyphs, out))
         print(f"\nwrote {args.cheatsheet}")
     return 0
 

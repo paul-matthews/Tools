@@ -83,8 +83,12 @@ AppleScript reaching Moom, region titles resolving, bundle identifiers
 resolving, and the delay being long enough.
 
 Then bind each script to its Meh chord in Alfred: a **Hotkey** trigger
-connected to a **Run Script** action calling `/usr/bin/osascript` with the
-script's path in this checkout. Powerpack required.
+connected to a **Run Script** action with **Language** set to `/bin/bash`,
+running `osascript "<path to the script>"`. `ACTIONS.md` lists the exact line
+for each. Powerpack required.
+
+Not `/usr/bin/osascript` as the language: Alfred passes the box's contents to
+the interpreter, so it would read the path as AppleScript source and fail.
 
 The keymap patch in Part 2 already put these chords on layer 2, held by Tab —
 both layers are written in one pass. That spends layer 2, the Windows base:
