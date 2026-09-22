@@ -24,18 +24,6 @@ for _i, _digit in enumerate("1234567890"):
 for _i in range(12):
     BASIC[58 + _i] = f"F{_i + 1}"
 
-# QMK keycode names -> numbers, for the subset regions.py can use.
-CODES = {f"KC_{chr(ord('A') + i)}": 4 + i for i in range(26)}
-CODES.update({f"KC_{d}": 30 + i for i, d in enumerate("1234567890")})
-CODES.update({
-    "KC_ENT": 40, "KC_ESC": 41, "KC_BSPC": 42, "KC_TAB": 43, "KC_SPC": 44,
-    "KC_MINS": 45, "KC_EQL": 46, "KC_LBRC": 47, "KC_RBRC": 48, "KC_BSLS": 49,
-    "KC_SCLN": 51, "KC_QUOT": 52, "KC_GRV": 53, "KC_COMM": 54, "KC_DOT": 55,
-    "KC_SLSH": 56, "KC_CAPS": 57,
-})
-
-TRANSPARENT = 1
-
 # Quantum ranges.
 MODIFIED = 0x0100        # modifier(s) applied to a basic keycode
 LAYER_TAP = 0x4000       # LT(layer, kc)
@@ -54,6 +42,23 @@ MEH_MODS = MOD_LCTL | MOD_LSFT | MOD_LALT
 KEYCHRON_LEFT_OPTION = KEYBOARD + 0
 KEYCHRON_LEFT_COMMAND = KEYBOARD + 2
 
+
+# QMK keycode names -> numbers, for the subset regions.py can use.
+CODES = {f"KC_{chr(ord('A') + i)}": 4 + i for i in range(26)}
+CODES.update({f"KC_{d}": 30 + i for i, d in enumerate("1234567890")})
+CODES.update({
+    "KC_ENT": 40, "KC_ESC": 41, "KC_BSPC": 42, "KC_TAB": 43, "KC_SPC": 44,
+    "KC_MINS": 45, "KC_EQL": 46, "KC_LBRC": 47, "KC_RBRC": 48, "KC_BSLS": 49,
+    "KC_SCLN": 51, "KC_QUOT": 52, "KC_GRV": 53, "KC_COMM": 54, "KC_DOT": 55,
+    "KC_SLSH": 56, "KC_CAPS": 57,
+    "KC_LCTL": 224, "KC_LSFT": 225, "KC_LALT": 226, "KC_LGUI": 227,
+    "KC_RCTL": 228, "KC_RSFT": 229, "KC_RALT": 230, "KC_RGUI": 231,
+    # Keychron's Mac-flavoured modifiers, which stand in for the standard ones
+    # on the macOS layers: left Option is KB0, not KC_LALT.
+    "KC_LOPTN": KEYBOARD + 0, "KC_LCMMD": KEYBOARD + 2,
+})
+
+TRANSPARENT = 1
 
 def chord(mods, keycode):
     """A basic keycode with modifiers held, e.g. HYPR(KC_K)."""

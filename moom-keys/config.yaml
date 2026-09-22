@@ -1,0 +1,150 @@
+# moom-keys: the single source of truth.
+#
+# Everything is generated from this file — Moom's actions, the keyboard's
+# layers, the AppleScripts, the cheat sheets. After editing:
+#
+#     ./moom-gen.py ~/Desktop/Moom-current.plist -o ~/Desktop/Moom-new.plist
+#     ./launcher-patch.py ~/Downloads/Keymap-K3_Max_RGB.json -o ~/Downloads/Keymap-new.json
+#     ./actions-gen.py
+#
+# Read by PyYAML where it is installed, and by miniyaml.py where it is not.
+
+screen:
+  # Moom's configuration grid. Bands below are whole cells of it, so every
+  # region lands exactly on the grid the mouse snaps to.
+  grid: {columns: 12, rows: 10}
+  # Only used to print pixel sizes in the cheat sheet.
+  size: {width: 5120, height: 2160}
+
+# The vocabulary regions are built from. A region is one column band crossed
+# with one row band.
+bands:
+  # [first cell, last cell) out of 12. One cell is 427px on the display above.
+  columns:
+    full:     [0, 12]     # 5120px
+    third-l:  [0, 4]      # 1707px
+    third-c:  [4, 8]
+    third-r:  [8, 12]
+    half-l:   [0, 6]      # 2560px
+    half-c:   [3, 9]
+    half-r:   [6, 12]
+    two3-l:   [0, 8]      # 3413px
+    two3-c:   [2, 10]
+    two3-r:   [4, 12]
+    side-l:   [0, 3]      # 1280px
+    side-r:   [9, 12]
+  # [first cell, last cell) out of 10, COUNTED DOWN FROM THE TOP, which is how
+  # people describe them. Moom stores frames from the bottom; the flip happens
+  # in code, once, and nowhere else.
+  rows:
+    full:  [0, 10]        # 2160px
+    cam:   [0, 6]         # top 60% — a window here sits under the webcam
+    stage: [5, 10]        # bottom 50% — overlaps `cam` by one cell
+    upper: [0, 7]         # top 70%
+    lower: [3, 10]        # bottom 70%
+
+keyboard:
+  base_layer: 0
+  # Windows. Held by Caps Lock (tap for Escape) or left Option (which keeps
+  # Option live, so ⌥←, ⌥⌫ and ⌥-click still work while it is down).
+  window_layer:
+    layer: 3
+    chord: hyper          # ⌃⌥⇧⌘
+    held_by: [caps, left-option]
+  # Apps and modes. Held by Tab (tap for Tab). Meh rather than Hyper because
+  # the window layer has claimed Hyper on most letters.
+  actions_layer:
+    layer: 2
+    chord: meh            # ⌃⌥⇧
+    held_by: [tab]
+
+# Regions. `chord` is the key Moom binds — always a letter or a digit, never
+# punctuation, which is where macOS keeps its own shortcuts. `keys` are the
+# two physical keys that send it, left hand then right. `overlay: true` also
+# gives the region a bare single key inside Moom's ⌥` controller.
+regions:
+  Full height:
+    - {id: third-left,  title: Left third,  columns: third-l, rows: full, chord: A, keys: [A, H], overlay: true}
+    - {id: half-left,   title: Left half,   columns: half-l,  rows: full, chord: S, keys: [S, J]}
+    - {id: half-centre, title: Centre half, columns: half-c,  rows: full, chord: D, keys: [D, K], overlay: true}
+    - {id: half-right,  title: Right half,  columns: half-r,  rows: full, chord: F, keys: [F, L]}
+    - {id: third-right, title: Right third, columns: third-r, rows: full, chord: G, keys: [G, ";"], overlay: true}
+
+  # One width, slid across the screen, flanked by the two narrow sides.
+  Widths:
+    - {id: side-left,   title: Narrow left,        columns: side-l, rows: full, chord: "1", keys: ["1", "6"]}
+    - {id: two3-left,   title: Left two-thirds,    columns: two3-l, rows: full, chord: "2", keys: ["2", "7"]}
+    - {id: two3-centre, title: Centre two-thirds,  columns: two3-c, rows: full, chord: "3", keys: ["3", "8"]}
+    - {id: two3-right,  title: Right two-thirds,   columns: two3-r, rows: full, chord: "4", keys: ["4", "9"]}
+    - {id: side-right,  title: Narrow right,       columns: side-r, rows: full, chord: "5", keys: ["5", "0"]}
+
+  Top anchored:
+    - {id: third-left-top,  title: "Left third, top",  columns: third-l, rows: upper, chord: Q, keys: [Q, Y]}
+    - {id: half-left-top,   title: "Left half, top",   columns: half-l,  rows: upper, chord: W, keys: [W, U]}
+    - {id: camera,          title: Camera stage,       columns: half-c,  rows: cam,   chord: E, keys: [E, I]}
+    - {id: half-right-top,  title: "Right half, top",  columns: half-r,  rows: upper, chord: R, keys: [R, O]}
+    - {id: third-right-top, title: "Right third, top", columns: third-r, rows: upper, chord: T, keys: [T, P]}
+
+  Bottom anchored:
+    - {id: third-left-bottom,  title: "Left third, bottom",  columns: third-l, rows: lower, chord: Z, keys: [Z, N]}
+    - {id: half-left-bottom,   title: "Left half, bottom",   columns: half-l,  rows: lower, chord: X, keys: [X, M]}
+    - {id: below-camera,       title: Below camera,          columns: half-c,  rows: stage, chord: C, keys: [C, ","]}
+    - {id: half-right-bottom,  title: "Right half, bottom",  columns: half-r,  rows: lower, chord: V, keys: [V, "."]}
+    - {id: third-right-bottom, title: "Right third, bottom", columns: third-r, rows: lower, chord: B, keys: [B, "/"]}
+
+  Whole screen:
+    # Tab sends Return's chord: ⌘Tab is the app switcher and Hyper contains ⌘.
+    - {id: full-screen, title: Full screen, columns: full, rows: full, chord: Enter, keys: [Tab, "'"]}
+
+# The palette over Moom's green button, left to right.
+palette: [third-left, half-left, half-centre, half-right, third-right]
+
+# Apps — focus an application, leave its windows alone. Find a bundle id with:
+#     osascript -e 'id of app "Obsidian"'
+# Chrome web apps are real bundles with generated ids, which is why Calendar
+# and Chat look the way they do.
+apps:
+  Chrome:    {key: C, bundle: com.google.chrome}
+  iTerm2:    {key: T, bundle: com.googlecode.iterm2}
+  VSCodium:  {key: V, bundle: com.vscodium}
+  Obsidian:  {key: O, bundle: md.obsidian}
+  Calendar:  {key: A, bundle: com.google.chrome.app.kjbdgfilnfhdoflbpgamdcdgpehopbep}
+  Chat:      {key: W, bundle: com.google.chrome.app.mdpkiolbdkhdjpekfbkbmhigcaggjagi}
+  Gemini:    {key: G, bundle: com.google.geminimacos}
+  Drive:     {key: D, bundle: com.google.drivefs}
+  Finder:    {key: F, bundle: com.apple.finder}
+  1Password: {key: P, bundle: com.1password.1password}
+
+# Modes — steps run in order, and the LAST one decides where focus ends up.
+#
+#   - layout: Meeting        run a saved Moom layout by name. The only way to
+#                            place several windows of one app.
+#   - place: Obsidian        activate an app named above, then put it in a
+#     region: Below camera   region by title
+#   - focus: Chrome          activate an app, move nothing
+#   - shortcut: Deep Work    run a shortcut from Shortcuts.app
+#   - url: https://...       open a link
+modes:
+  Meeting:
+    key: "1"
+    steps:
+      - layout: Meeting
+      - focus: Obsidian
+
+  Presenting:
+    key: "2"
+    steps:
+      - layout: Presenting          # record this in Moom first
+
+  Notes:
+    key: "3"
+    steps:
+      - place: Chrome
+        region: Left third
+      - place: Obsidian
+        region: Right two-thirds
+
+  Terminals:
+    key: "4"
+    steps:
+      - layout: Terminals           # several iTerm windows: a layout, not steps

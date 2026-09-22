@@ -53,14 +53,13 @@ rebinds Caps Lock and left Option on layer 0, which is the macOS base layer.
 
    ```sh
    ./launcher-inspect.py ~/Downloads/Keymap-K3_Max_RGB.json
-   ./launcher-patch.py ~/Downloads/Keymap-K3_Max_RGB.json \
-       --layer 3 -o ~/Downloads/Keymap-windows.json
-   ./launcher-inspect.py ~/Downloads/Keymap-windows.json --layer 0 --layer 3
+   ./launcher-patch.py ~/Downloads/Keymap-K3_Max_RGB.json -o ~/Downloads/Keymap-new.json
+   ./launcher-inspect.py ~/Downloads/Keymap-new.json --layer 0 --layer 2 --layer 3
    ```
 
-   The first command reports which layers are reachable from which, so it is
-   clear layer 3 is free on macOS. The third reads the patched file back: 42
-   chords on layer 3, `LT(3,Esc)` on Caps, `LM(3,0x04)` on left Option.
+   The first reports which layers are reachable from which. The third reads
+   the patched file back: 42 chords on layer 3 and 14 on layer 2, with
+   `LT(3,Esc)` on Caps, `LM(3,0x04)` on left Option and `LT(2,Tab)` on Tab.
 4. **Import** the patched file in Launcher and let it write to the keyboard.
    The checksum is recomputed by the patcher, so Launcher accepts it.
 
@@ -85,17 +84,10 @@ Then bind each script to its Meh chord in Alfred: a **Hotkey** trigger
 connected to a **Run Script** action calling `/usr/bin/osascript` with the
 script's path in this checkout. Powerpack required.
 
-Add `--actions-layer 2` when patching the keymap to put the chords on the
-keyboard, held by Tab:
-
-```sh
-./launcher-patch.py ~/Downloads/Keymap-K3_Max_RGB.json \
-    --layer 3 --actions-layer 2 -o ~/Downloads/Keymap-windows.json
-```
-
-This spends layer 2, the Windows base. Nothing on macOS reaches it, but
-flipping the Mac/Win switch afterwards lands on the actions layer rather than
-a Windows keymap.
+The keymap patch in Part 2 already put these chords on layer 2, held by Tab —
+both layers are written in one pass. That spends layer 2, the Windows base:
+nothing on macOS reaches it, but flipping the Mac/Win switch afterwards lands
+on the actions layer rather than a Windows keymap.
 
 ## Part 4 — verifying
 
@@ -113,14 +105,18 @@ what to fix.
 | 7 | Hold **left Option**, press **`** | Moom's overlay opens | `` ` `` got mapped on the layer; it must stay transparent |
 | 8 | Hold **Caps**, press **I** | Window goes to the **top** centre | Row bands are inverted — `frame()` flips them for Moom's bottom-left origin |
 | 9 | Hold **Caps**, press **,** | Window goes to the **bottom** centre | The chord is `⌃⌥⇧⌘C`, not `⌃⌥⇧⌘,` — re-patch the keymap and re-import the plist together |
+| 10 | Tap **Tab** | A tab character | Tab also holds the actions layer; a tap must still type |
+| 11 | Hold **Tab**, press **C** | Chrome comes forward | Only once Alfred is bound — until then the chord fires into nothing |
 
 Checks 1–2 are the Moom half, 3–9 the keyboard half. If 1 works and 2 does
 not, the modifier flags are wrong and nothing on the keyboard will fire; fix
 that before touching the keymap.
 
-The overlay in check 1 takes the **chord key** — the left-hand letter — while
-the keyboard checks press whichever physical key you like, since both keys of
-a pair send the same chord. `CHEATSHEET.md` lists all three columns.
+The overlay in check 1 takes the **chord key** — the left-hand letter — and
+only for regions marked `overlay: true` in the config, which is Left third,
+Centre half and Right third. The keyboard checks press whichever physical key
+you like, since both keys of a pair send the same chord. `CHEATSHEET.md`
+lists all three columns.
 
 ## Saved layouts
 
