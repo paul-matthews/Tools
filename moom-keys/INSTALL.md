@@ -95,8 +95,11 @@ only adding or moving a key needs the workflow rebuilt.
 **Check:** hold **right Command** and press **1** — the meeting layout runs.
 Then right Command and **C** — Chrome comes forward.
 
-If Alfred refuses the file, `ACTIONS.md` lists every hotkey with its exact
-command, for binding by hand. Tedious, but certain.
+**If the hotkeys arrive blank**, the encoding Alfred wants is not what was
+generated — but nothing is wasted. Every object is built, named and wired, so
+open the workflow and double-click each Hotkey object: its canvas note says
+which chord to record (`⌃⌥⇧C  Chrome`). Fourteen chords, no typing, no
+wiring.
 
 ## When a check fails
 

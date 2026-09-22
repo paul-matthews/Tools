@@ -14,9 +14,12 @@ regenerating updates what the hotkeys do without touching Alfred again.
 Rebuilding and reinstalling replaces the workflow in place, because the
 bundle id stays the same.
 
-This is the one piece that cannot be verified from outside Alfred. If it
-refuses to import, ACTIONS.md lists every hotkey and command for binding by
-hand, which is tedious but certain.
+This is the one piece that cannot be verified from outside Alfred, and the
+hotkey encoding below is inferred rather than confirmed: `hotkey` is a macOS
+virtual key code and `hotmod` an NSEvent modifier mask, which is what Alfred
+appears to store. If the hotkeys arrive blank, every object is still built,
+named and wired — double-click each Hotkey and record the chord its canvas
+note gives. ACTIONS.md lists them too.
 """
 
 from __future__ import annotations
@@ -92,8 +95,12 @@ def workflow(cfg, scripts, chord):
         objects.append(script_object(runner, f'osascript "{path}"'))
         connections[trigger] = [{"destinationuid": runner, "modifiers": 0,
                                  "modifiersubtext": "", "vitoclose": False}]
-        uidata[trigger] = {"xpos": 40, "ypos": 40 + index * 110}
-        uidata[runner] = {"xpos": 320, "ypos": 40 + index * 110}
+        # Notes label each object on Alfred's canvas, so if a hotkey has to
+        # be recorded by hand it is obvious which one it is.
+        uidata[trigger] = {"xpos": 40, "ypos": 40 + index * 110,
+                           "note": f'{GLYPHS[chord]}{action["key"]}  {action["name"]}'}
+        uidata[runner] = {"xpos": 320, "ypos": 40 + index * 110,
+                          "note": action["name"]}
 
     listing = "\n".join(
         f'{GLYPHS[chord]}{action["key"]}  —  {action["name"]}'
