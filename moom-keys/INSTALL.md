@@ -25,10 +25,12 @@ it has to be quit before both the export and the import.
 ```sh
 osascript -e 'quit app "Moom"'
 
-# Back this file up somewhere you will find it again — it is the rollback.
-defaults export com.manytricks.Moom ~/Desktop/Moom-backup.plist
+# Two exports: the rollback is written once and never touched again, the
+# working copy is re-exported every time you regenerate.
+defaults export com.manytricks.Moom ~/Desktop/Moom-rollback.plist
+defaults export com.manytricks.Moom ~/Desktop/Moom-current.plist
 
-./moom-gen.py ~/Desktop/Moom-backup.plist -o ~/Desktop/Moom-new.plist -c CHEATSHEET.md
+./moom-gen.py ~/Desktop/Moom-current.plist -o ~/Desktop/Moom-new.plist -c CHEATSHEET.md
 
 # Optional: read back what was generated before committing to it.
 ./moom-inspect.py ~/Desktop/Moom-new.plist --no-map | less
@@ -120,11 +122,13 @@ lists all three columns.
 
 ## Saved layouts
 
-Moom's own saved layouts (arrange windows, then save) are carried across every
-regeneration — `moom-gen.py` keeps them and replaces only its own actions. But
-it can only keep what is in the file you hand it, so **export fresh before
-regenerating**; generating from the original backup would drop any layout
-recorded since.
+Moom's own saved layouts (arrange windows, then save) survive every
+regeneration: `moom-gen.py` records the identifiers it writes and replaces
+only those, keeping everything else. But it can only keep what is in the file
+you hand it, so **export fresh before regenerating**. Every run says what it
+kept, layouts by name, and `moom-inspect.py` reports them at the top of its
+output — so a missing layout shows up immediately rather than the next time
+you need it.
 
 They are worth having alongside the generated regions: a layout can place
 several windows of the same app, which a scripted sequence of region moves
@@ -137,7 +141,7 @@ Each half independently:
 
 ```sh
 osascript -e 'quit app "Moom"'
-defaults import com.manytricks.Moom ~/Desktop/Moom-backup.plist
+defaults import com.manytricks.Moom ~/Desktop/Moom-rollback.plist
 open -a Moom
 ```
 

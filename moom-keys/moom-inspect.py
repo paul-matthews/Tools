@@ -142,7 +142,20 @@ def main():
     print(f"Keyboard controller: {controller} ({scope})")
 
     controls = prefs.get("Custom Controls (4001)") or prefs.get("Custom Controls") or []
-    print(f"Custom actions     : {len(controls)}\n")
+    print(f"Custom actions     : {len(controls)}")
+
+    # Layouts are recorded by hand and cannot be regenerated, so say plainly
+    # whether this file still has them.
+    layouts = [control for key in ("Custom Controls (4001)", "Custom Controls")
+               for control in (prefs.get(key) or [])
+               if control.get("Snapshot") or control.get("Action") == 1001]
+    if layouts:
+        print("Saved layouts      : " + ", ".join(
+            f'{control.get("Title") or "(untitled)"} '
+            f'({len(control.get("Snapshot") or [])} windows)' for control in layouts))
+    else:
+        print("Saved layouts      : none")
+    print()
 
     seen = {}
     for index, control in enumerate(controls):

@@ -13,8 +13,13 @@ across untouched — they are recorded by hand and cannot be generated.
 
 Every region gets a global chord. Regions marked `overlay: true` also get a
 bare single key, which only fires while Moom's ⌥` controller is on screen.
-Identifiers are derived from the region id, so regenerating updates actions
-in place rather than piling up duplicates.
+
+**Anything this tool did not write is kept.** Identifiers are derived from the
+region id, and the ones written are recorded in the plist, so regenerating
+replaces exactly those and leaves everything else — saved layouts, actions
+made by hand, whatever Moom adds in a future version — alone. Guessing at
+which actions were "mine" by their type is how a recorded layout gets
+deleted.
 """
 
 from __future__ import annotations
@@ -35,7 +40,10 @@ NAMESPACE = uuid.UUID("6f9b1d4e-6d1e-5a2f-9c3b-4a7e0d21c8f5")
 
 MOVE_AND_ZOOM = 19
 SECTION_HEADER = -101
-SAVED_LAYOUT = 1001
+
+# Where the identifiers written last time are recorded, so the next run knows
+# exactly what is its own. Moom ignores keys it does not recognise.
+MANIFEST = "moom-keys: generated identifiers"
 
 # NSEvent modifier bits: device-independent, the device-dependent left-side
 # bit (what Moom records from a real keypress, and what QMK sends), and glyph.
@@ -188,8 +196,9 @@ def main():
     parser.add_argument("plist", help="exported com.manytricks.Moom plist")
     parser.add_argument("-o", "--output", required=True, help="plist to write")
     parser.add_argument("-c", "--cheatsheet", help="also write a markdown cheat sheet")
-    parser.add_argument("--keep-existing", action="store_true",
-                        help="keep hand-drawn actions instead of replacing them")
+    parser.add_argument("--replace-all", action="store_true",
+                        help="drop every existing action, not just the generated "
+                             "ones — this deletes saved layouts, so be sure")
     parser.add_argument("--no-device-bits", action="store_true",
                         help="omit the left-modifier device bits from chords")
     parser.add_argument("--binary", action="store_true", help="write a binary plist")
@@ -209,11 +218,16 @@ def main():
     generated, index_of = build(cfg, chord, not args.no_device_bits)
     generated_ids = {control["Identifier"] for control in generated}
     existing = prefs.get("Custom Controls (4001)") or []
-    kept = [control for control in existing
-            if control.get("Identifier") not in generated_ids
-            and (args.keep_existing or control.get("Action") == SAVED_LAYOUT)]
+
+    # Ours is everything written now, plus everything written last time — the
+    # latter so that removing a region removes its action too, rather than
+    # leaving it behind bound to a key.
+    ours = generated_ids | set(prefs.get(MANIFEST) or [])
+    kept = [] if args.replace_all else [
+        control for control in existing if control.get("Identifier") not in ours]
 
     prefs["Custom Controls (4001)"] = generated + kept
+    prefs[MANIFEST] = sorted(generated_ids)
     prefs["Configuration Grid: Columns"] = cfg.columns
     prefs["Configuration Grid: Rows"] = cfg.rows
     prefs["Palette"] = {f"{index + 3}-3": index_of[name]
@@ -226,9 +240,14 @@ def main():
                       sort_keys=True)
 
     overlay = sum(region["overlay"] for region in cfg.regions)
+    layouts = [control.get("Title") or "(untitled)" for control in kept
+               if control.get("Snapshot")]
     print(f"{len(cfg.regions)} regions -> {len(generated)} actions "
-          f"({overlay} also on the ⌥` overlay, {len(kept)} existing kept, "
-          f"{len(existing) - len(kept)} replaced)")
+          f"({overlay} also on the ⌥` overlay)")
+    print(f"kept {len(kept)} action(s) this tool did not write"
+          + (f", including the saved layout(s): {', '.join(layouts)}" if layouts else ""))
+    if args.replace_all and existing:
+        print(f"  --replace-all: dropped all {len(existing)} existing actions")
     print(f"wrote {args.output}")
     if args.cheatsheet:
         Path(args.cheatsheet).write_text(cheat_sheet(cfg, chord))

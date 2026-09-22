@@ -43,11 +43,16 @@ back on quit, which would clobber the import.
 
 ```sh
 osascript -e 'quit app "Moom"'
-defaults export com.manytricks.Moom ~/Desktop/Moom-backup.plist   # keep: rollback
-./moom-gen.py ~/Desktop/Moom-backup.plist -o ~/Desktop/Moom-new.plist -c CHEATSHEET.md
+defaults export com.manytricks.Moom ~/Desktop/Moom-rollback.plist   # keep this, untouched
+defaults export com.manytricks.Moom ~/Desktop/Moom-current.plist    # the working copy
+./moom-gen.py ~/Desktop/Moom-current.plist -o ~/Desktop/Moom-new.plist -c CHEATSHEET.md
 defaults import com.manytricks.Moom ~/Desktop/Moom-new.plist
 open -a Moom
 ```
+
+Two exports, deliberately: the rollback is written once and never again, while
+the working copy is re-exported every time. Reusing one file for both means
+the first regeneration overwrites the state you meant to be able to go back to.
 
 Check: **⌥`** then **D** moves the window to the centre half.
 
@@ -105,10 +110,10 @@ iTerm2, `1` for meeting mode. `ACTIONS.md` lists them.
 
 ## Changing anything
 
-Edit `config.yaml`, then regenerate. **Export Moom fresh first** rather than
-reusing the original backup: generated actions replace themselves by
-identifier, so anything you have added since — saved layouts especially — is
-kept, and generating from a stale backup would drop it.
+Edit `config.yaml`, then regenerate. **Export Moom fresh first.** The
+generator keeps everything it did not write, but it can only keep what is in
+the file you give it — generate from last week's export and anything recorded
+since is simply not there to keep.
 
 ```sh
 osascript -e 'quit app "Moom"'
@@ -118,6 +123,12 @@ defaults import com.manytricks.Moom ~/Desktop/Moom-new.plist
 open -a Moom
 ./launcher-patch.py ~/Downloads/Keymap-K3_Max_RGB.json -o ~/Downloads/Keymap-new.json
 ./actions-gen.py -c ACTIONS.md
+```
+
+It reports what it preserved, layouts by name:
+
+```
+kept 17 action(s) this tool did not write, including the saved layout(s): Meeting
 ```
 
 Change a chord and both the plist and the keymap have to be reimported; they
@@ -228,8 +239,13 @@ Moom 4 keeps its actions in `Custom Controls (4001)`; a legacy Moom 3
   controller-only single key; Hyper is `0x1E0100`.
 * `Title` — required for AppleScript addressing, and unique.
 
-Saved layouts are recorded by hand and cannot be generated, so `moom-gen.py`
-carries them across untouched.
+Saved layouts are recorded by hand and cannot be generated, so they must
+survive every regeneration. `moom-gen.py` records the identifiers it writes
+under its own key in the plist, and on the next run replaces exactly those,
+keeping everything else — layouts, actions made by hand, anything a future
+Moom adds. Deciding what is "mine" by an action's *type* is what deleted a
+recorded layout once; identity is the only safe test. `--replace-all` drops
+everything for a genuine clean slate, and says so.
 
 ## Reference: Launcher's export
 
