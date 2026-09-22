@@ -73,12 +73,17 @@ lives in the keyboard, so it keeps working over Bluetooth and 2.4GHz.
 ```sh
 ./actions-gen.py -c ACTIONS.md
 osascript scripts/mode-meeting.applescript          # runs it, here and now
-./alfred-gen.py -o ~/Desktop/moom-keys.alfredworkflow
+./alfred-gen.py --install
 ```
 
-Double-click the workflow to install it: one hotkey per action, each wired to
+Restart Alfred and the chords are live: one hotkey per action, each wired to
 run its script from this checkout. Editing `config.yaml` and regenerating then
 changes what the hotkeys do without touching Alfred again.
+
+It installs rather than imports because **Alfred strips hotkeys out of an
+imported workflow** — confirmed by exporting one back and finding every
+hotkey it was given blanked, while hotkeys assigned by hand match what this
+generates exactly. Writing into Alfred's workflows folder skips that.
 
 [`INSTALL.md`](INSTALL.md) has all of this at walking pace, with a
 verification ladder whose failures each point at what to fix, and rollback for

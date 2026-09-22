@@ -19,7 +19,7 @@ defaults export com.manytricks.Moom ~/Desktop/Moom-current.plist    # working co
 
 ./moom-gen.py ~/Desktop/Moom-current.plist -o ~/Desktop/Moom-new.plist -c CHEATSHEET.md
 ./actions-gen.py -c ACTIONS.md
-./alfred-gen.py -o ~/Desktop/moom-keys.alfredworkflow
+./alfred-gen.py --install
 ./launcher-patch.py ~/Downloads/Keymap-K3_Max_RGB.json -o ~/Downloads/Keymap-new.json
 ```
 
@@ -84,22 +84,25 @@ control Moom and Obsidian the first time — allow each.
 
 ## 6. Install the Alfred workflow
 
-Double-click `~/Desktop/moom-keys.alfredworkflow`. Alfred will ask to install
-it and to approve the hotkeys.
+Step 1 already wrote it into Alfred's workflows folder. **Restart Alfred** to
+pick it up — it reads its workflow list at launch.
 
-It contains one hotkey per action, each wired to run the matching script from
-this checkout. That means editing `config.yaml` and re-running
-`actions-gen.py` changes what the hotkeys do without touching Alfred again;
-only adding or moving a key needs the workflow rebuilt.
+If you imported an earlier copy by double-clicking a `.alfredworkflow`, delete
+that from Alfred → Workflows first. Both carry the same bundle id, so two
+copies would fight over the same chords.
+
+**Installed, not imported, on purpose.** Alfred strips the hotkeys out of any
+workflow it imports: export one back after importing and every hotkey it was
+given reads `hotkey: 0, hotmod: 0`, while hotkeys assigned by hand read
+exactly what `alfred-gen.py` writes. Writing straight into the workflows
+folder skips that.
+
+`alfred-gen.py -o some.alfredworkflow` still builds the importable file, for
+carrying to another machine — where its hotkeys will need recording by hand,
+for the same reason.
 
 **Check:** hold **right Command** and press **1** — the meeting layout runs.
 Then right Command and **C** — Chrome comes forward.
-
-**If the hotkeys arrive blank**, the encoding Alfred wants is not what was
-generated — but nothing is wasted. Every object is built, named and wired, so
-open the workflow and double-click each Hotkey object: its canvas note says
-which chord to record (`⌃⌥⇧C  Chrome`). Fourteen chords, no typing, no
-wiring.
 
 ## When a check fails
 
@@ -114,7 +117,7 @@ wiring.
 | left Option + `` ` `` does not open Moom's overlay | `` ` `` got mapped on the layer; it must stay transparent. |
 | Caps + `I` puts the window at the bottom | Row bands are inverted; `frame()` flips them for Moom's bottom-left origin. |
 | `run "Meeting"` errors | The layout is not saved under exactly that name, or Moom's AppleScript support is off. |
-| right Command + `1` does nothing | The workflow is not installed, or its hotkeys were not approved. Check Alfred → Workflows. |
+| right Command + `1` does nothing | Alfred has not been restarted since the install, or an imported copy is shadowing it. Check Alfred → Workflows for two `moom-keys` entries. |
 | right Command still types Command | The keymap did not take — layer 0 column 10 should read `MO(2)`. |
 
 ## Rolling back

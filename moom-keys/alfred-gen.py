@@ -1,25 +1,23 @@
 #!/usr/bin/env python3
 """Generate an Alfred workflow that binds every action's chord to its script.
 
-An .alfredworkflow is a zip holding an info.plist, so the fourteen hotkeys
-can be built rather than clicked in one at a time.
+Each action becomes a Hotkey trigger wired to a Run Script action calling
+`osascript` on the script in this checkout, so the scripts stay the single
+copy: editing config.yaml and regenerating changes what the hotkeys do
+without touching Alfred again.
+
+    ./alfred-gen.py --install
+
+**Install, do not import.** Alfred strips the hotkeys out of an imported
+.alfredworkflow — confirmed by exporting one back and finding every hotkey it
+was given reading `hotkey: 0, hotmod: 0`, while the ones assigned by hand read
+exactly what this generates. Writing the workflow into Alfred's own workflows
+folder skips that sanitising and the hotkeys arrive live.
 
     ./alfred-gen.py -o ~/Desktop/moom-keys.alfredworkflow
 
-Double-click the result to install it. Each action becomes a Hotkey trigger
-wired to a Run Script action that calls `osascript` on the script in this
-checkout — so the scripts stay the single copy, and editing config.yaml and
-regenerating updates what the hotkeys do without touching Alfred again.
-
-Rebuilding and reinstalling replaces the workflow in place, because the
-bundle id stays the same.
-
-This is the one piece that cannot be verified from outside Alfred, and the
-hotkey encoding below is inferred rather than confirmed: `hotkey` is a macOS
-virtual key code and `hotmod` an NSEvent modifier mask, which is what Alfred
-appears to store. If the hotkeys arrive blank, every object is still built,
-named and wired — double-click each Hotkey and record the chord its canvas
-note gives. ACTIONS.md lists them too.
+still writes the importable file, for moving it to another machine — where
+its hotkeys will need recording by hand, for the same reason.
 """
 
 from __future__ import annotations
@@ -36,6 +34,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import config as config_module  # noqa: E402
 
 BUNDLE_ID = "com.moom-keys.actions"
+# The folder Alfred keeps installed workflows in, and where its preferences
+# say to look if they have been moved to Dropbox or iCloud.
+WORKFLOW_FOLDER = "user.workflow.moom-keys"
+ALFRED_PREFS = Path("~/Library/Preferences/"
+                    "com.runningwithcrayons.Alfred-Preferences.plist").expanduser()
+DEFAULT_SYNC = Path("~/Library/Application Support/Alfred").expanduser()
 
 # NSEvent modifier flags, which is how Alfred records a hotkey's modifiers.
 SHIFT, CONTROL, OPTION, COMMAND = 0x20000, 0x40000, 0x80000, 0x100000
@@ -55,9 +59,11 @@ def identifier(name):
 
 
 def hotkey_object(uid, keycode, mods, label):
+    # Exactly the shape Alfred writes for a hotkey assigned by hand, including
+    # the absence of "argumenttext", which it drops once a key is recorded.
     return {
         "config": {
-            "action": 0, "argument": 3, "argumenttext": "",
+            "action": 0, "argument": 3,
             "focusedappvariable": False, "focusedappvariablename": "",
             "hotkey": keycode, "hotmod": mods, "hotstring": label,
             "leftcursor": False, "modsmode": 0, "relatedAppsMode": 0,
@@ -125,11 +131,28 @@ def workflow(cfg, scripts, chord):
     }
 
 
+def alfred_workflows():
+    """Where Alfred keeps installed workflows, following its sync folder."""
+    folder = DEFAULT_SYNC
+    if ALFRED_PREFS.exists():
+        with open(ALFRED_PREFS, "rb") as handle:
+            synced = plistlib.load(handle).get("syncfolder")
+        if synced:
+            folder = Path(synced).expanduser()
+    return folder / "Alfred.alfredpreferences" / "workflows"
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("-o", "--output", required=True,
-                        help="the .alfredworkflow file to write")
+    parser.add_argument("-o", "--output",
+                        help="write an importable .alfredworkflow here instead "
+                             "of installing (its hotkeys will not survive import)")
+    parser.add_argument("--install", action="store_true",
+                        help="write the workflow into Alfred's workflows folder, "
+                             "where the hotkeys arrive live")
+    parser.add_argument("--to", help="install into this folder instead of the "
+                                     "one Alfred's preferences point at")
     parser.add_argument("--scripts",
                         default=str(Path(__file__).resolve().parent / "scripts"),
                         help="directory the hotkeys should run scripts from")
@@ -145,16 +168,37 @@ def main():
     if missing:
         raise SystemExit(f"no script for {', '.join(missing)} — run actions-gen.py first")
 
-    chord = cfg.layer("actions_layer").get("chord", "meh")
-    output = Path(args.output).expanduser()
-    with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr("info.plist",
-                         plistlib.dumps(workflow(cfg, scripts, chord)))
+    if not args.install and not args.output:
+        raise SystemExit("nothing to do: pass --install, or -o to write a file")
 
+    chord = cfg.layer("actions_layer").get("chord", "meh")
+    built = workflow(cfg, scripts, chord)
     for action in cfg.actions:
         print(f'{GLYPHS[chord]}{action["key"]:<3} {action["name"]}')
-    print(f"\nwrote {output}")
-    print("Double-click it to install. Alfred will ask to approve the hotkeys.")
+
+    if args.output:
+        output = Path(args.output).expanduser()
+        with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("info.plist", plistlib.dumps(built))
+        print(f"\nwrote {output}")
+        print("Importing this strips the hotkeys — Alfred does that to every "
+              "imported workflow. Use --install on the machine that runs it.")
+
+    if args.install:
+        folder = Path(args.to).expanduser() if args.to else alfred_workflows()
+        if not folder.is_dir():
+            raise SystemExit(
+                f"{folder} does not exist — is Alfred installed? Its workflows "
+                "folder moves with the sync folder, so pass --to if yours is "
+                "somewhere else.")
+        target = folder / WORKFLOW_FOLDER
+        target.mkdir(exist_ok=True)
+        with open(target / "info.plist", "wb") as handle:
+            plistlib.dump(built, handle)
+        print(f"\ninstalled into {target}")
+        print("Restart Alfred to pick it up: its workflow list is read at launch.")
+        print("Delete any copy you imported earlier first — same bundle id, "
+              "so two copies would fight over the same chords.")
     return 0
 
 
